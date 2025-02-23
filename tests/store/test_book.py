@@ -5,6 +5,7 @@ import pytest
 
 from molycow.errors import ConflictError, MolycowError, ValidationError
 from molycow.store import Book
+from molycow.store.book import split_statements
 
 SETUP = """
 CREATE TABLE parent (id TEXT PRIMARY KEY, name TEXT NOT NULL);
@@ -122,3 +123,28 @@ def test_a_closed_book_refuses_everything(book: Book) -> None:
     with pytest.raises(MolycowError, match="closed"):
         book.atomic().__enter__()
     book.close()
+
+
+def test_a_block_of_sql_is_cut_into_whole_statements() -> None:
+    cut = split_statements(SETUP)
+    assert len(cut) == 2
+    assert cut[0].startswith("CREATE TABLE parent")
+    assert cut[1].endswith(";")
+
+
+def test_a_block_that_stops_mid_statement_is_refused() -> None:
+    with pytest.raises(ValidationError, match="part way through"):
+        split_statements("CREATE TABLE half (id TEXT")
+
+
+def test_a_script_runs_inside_a_savepoint_and_can_be_rolled_back(book: Book) -> None:
+    with pytest.raises(ValidationError):
+        add_a_table_then_fail(book)
+    names = {row["name"] for row in book.all("SELECT name FROM sqlite_master")}
+    assert "late" not in names
+
+
+def add_a_table_then_fail(book: Book) -> None:
+    with book.atomic():
+        book.script("CREATE TABLE late (id TEXT PRIMARY KEY);")
+        book.execute("INSERT INTO child VALUES (?, ?)", ("X-9", "CU-0404"))

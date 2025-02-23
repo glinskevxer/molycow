@@ -1,0 +1,120 @@
+"""The schema, one numbered step at a time.
+
+Every change to the book is a new migration appended to :data:`MIGRATIONS`.
+Nothing here is ever edited once it has shipped, because a book in the field
+has already run it and a rewritten step would leave two pharmacies with
+different tables and the same version number.
+
+The version lives in sqlite's own ``user_version`` pragma rather than a table
+of our own, so a book that has never been migrated reads as version zero
+without anything having to exist first.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from molycow.errors import MolycowError
+from molycow.store.book import Book
+
+
+@dataclass(frozen=True)
+class Migration:
+    """One numbered step, with the statements that carry it out."""
+
+    number: int
+    name: str
+    statements: str
+
+
+CORE_REGISTER = """
+CREATE TABLE customer (
+  id          TEXT PRIMARY KEY,
+  name        TEXT NOT NULL UNIQUE,
+  kind        TEXT NOT NULL CHECK (kind IN ('hospital', 'clinic', 'imaging', 'research')),
+  licence     TEXT NOT NULL,
+  street      TEXT NOT NULL,
+  town        TEXT NOT NULL,
+  zone        TEXT NOT NULL,
+  opened_on   TEXT NOT NULL,
+  closed_on   TEXT
+);
+
+CREATE TABLE authorized_user (
+  id          TEXT PRIMARY KEY,
+  customer_id TEXT NOT NULL REFERENCES customer(id),
+  name        TEXT NOT NULL,
+  licence     TEXT NOT NULL,
+  added_on    TEXT NOT NULL,
+  ended_on    TEXT,
+  UNIQUE (customer_id, name)
+);
+
+CREATE TABLE authorized_nuclide (
+  user_id     TEXT NOT NULL REFERENCES authorized_user(id) ON DELETE CASCADE,
+  nuclide     TEXT NOT NULL,
+  PRIMARY KEY (user_id, nuclide)
+);
+
+CREATE INDEX customer_by_zone ON customer(zone);
+CREATE INDEX authorized_user_by_customer ON authorized_user(customer_id);
+"""
+
+
+MIGRATIONS: tuple[Migration, ...] = (Migration(1, "core register", CORE_REGISTER),)
+
+
+def latest() -> int:
+    """The version a fully migrated book reads."""
+    return MIGRATIONS[-1].number if MIGRATIONS else 0
+
+
+def schema_version(book: Book) -> int:
+    """What version the book is at now."""
+    value = book.value("PRAGMA user_version")
+    return int(value or 0)
+
+
+def pending(book: Book) -> tuple[Migration, ...]:
+    """The steps this book has not run yet, in order."""
+    at = schema_version(book)
+    return tuple(step for step in MIGRATIONS if step.number > at)
+
+
+def is_current(book: Book) -> bool:
+    return schema_version(book) == latest()
+
+
+def apply(book: Book, upto: int | None = None) -> tuple[Migration, ...]:
+    """Run the pending steps, each one inside its own savepoint.
+
+    A step that fails leaves the book at the version before it, which is the
+    only state a half applied schema is allowed to be in.
+    """
+    target = latest() if upto is None else upto
+    if target > latest():
+        raise MolycowError(f"there is no migration {target}, the last one is {latest()}")
+    ran: list[Migration] = []
+    for step in pending(book):
+        if step.number > target:
+            break
+        with book.atomic():
+            book.script(step.statements)
+            book.execute(f"PRAGMA user_version = {step.number}")
+        ran.append(step)
+    return tuple(ran)
+
+
+def require_current(book: Book) -> None:
+    """Refuse to work against a book that is behind the code."""
+    at = schema_version(book)
+    if at != latest():
+        raise MolycowError(
+            "this book is not at the schema this build expects",
+            at=at,
+            wanted=latest(),
+        )
+
+
+def numbers() -> tuple[int, ...]:
+    return tuple(step.number for step in MIGRATIONS)

@@ -79,9 +79,16 @@ class Book:
             raise _integrity(exc) from None
 
     def script(self, sql: str) -> None:
-        """Run a whole statement block, which is how migrations are written."""
+        """Run a whole statement block, which is how migrations are written.
+
+        The statements are split and run one at a time on purpose. sqlite's own
+        ``executescript`` commits whatever transaction is open before it starts,
+        which silently throws away the savepoint a migration is meant to be
+        running inside.
+        """
         self._require_open()
-        self._connection.executescript(sql)
+        for statement in split_statements(sql):
+            self.execute(statement)
 
     def one(self, sql: str, params: Params = ()) -> sqlite3.Row | None:
         row: sqlite3.Row | None = self.execute(sql, params).fetchone()
@@ -131,6 +138,21 @@ class Book:
         trace: TracebackType | None,
     ) -> None:
         self.close()
+
+
+def split_statements(sql: str) -> list[str]:
+    """Cut a block of sql into whole statements."""
+    statements: list[str] = []
+    buffer = ""
+    for line in sql.splitlines(keepends=True):
+        buffer += line
+        if sqlite3.complete_statement(buffer):
+            statements.append(buffer.strip())
+            buffer = ""
+    tail = buffer.strip()
+    if tail:
+        raise ValidationError("that sql block ends part way through a statement", tail=tail[:60])
+    return statements
 
 
 def _integrity(exc: sqlite3.IntegrityError) -> MolycowError:
