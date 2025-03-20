@@ -61,7 +61,37 @@ CREATE INDEX authorized_user_by_customer ON authorized_user(customer_id);
 """
 
 
-MIGRATIONS: tuple[Migration, ...] = (Migration(1, "core register", CORE_REGISTER),)
+GENERATOR_BENCH = """
+CREATE TABLE generator (
+  id                  TEXT PRIMARY KEY,
+  serial              TEXT NOT NULL UNIQUE,
+  maker               TEXT NOT NULL,
+  calibrated_at       TEXT NOT NULL,
+  calibrated_activity TEXT NOT NULL,
+  received_on         TEXT NOT NULL,
+  expires_on          TEXT NOT NULL,
+  retired_on          TEXT
+);
+
+CREATE TABLE elution (
+  id           TEXT PRIMARY KEY,
+  generator_id TEXT NOT NULL REFERENCES generator(id),
+  drawn_at     TEXT NOT NULL,
+  volume       TEXT NOT NULL,
+  activity     TEXT NOT NULL,
+  expected     TEXT NOT NULL,
+  residual     TEXT NOT NULL
+);
+
+CREATE INDEX elution_by_generator ON elution(generator_id, drawn_at);
+CREATE INDEX generator_by_expiry ON generator(expires_on);
+"""
+
+
+MIGRATIONS: tuple[Migration, ...] = (
+    Migration(1, "core register", CORE_REGISTER),
+    Migration(2, "generator bench", GENERATOR_BENCH),
+)
 
 
 def latest() -> int:
