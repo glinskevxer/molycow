@@ -177,6 +177,11 @@ class ElutionRepository:
         rows = self._book.all("SELECT * FROM elution ORDER BY drawn_at, id")
         return [elution_from(row) for row in rows]
 
+    def next_id(self, day: dt.date) -> str:
+        """The next elution number for a day, which restarts every morning."""
+        issued = [str(row["id"]) for row in self._book.all("SELECT id FROM elution")]
+        return make(Kind.ELUTION, next_serial(issued, Kind.ELUTION, day), day)
+
     def count_for(self, generator_id: str) -> int:
         value = self._book.value(
             "SELECT count(*) FROM elution WHERE generator_id = ?", (generator_id,)
