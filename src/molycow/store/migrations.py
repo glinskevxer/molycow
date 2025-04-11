@@ -88,9 +88,22 @@ CREATE INDEX generator_by_expiry ON generator(expires_on);
 """
 
 
+ELUATE_TESTS = """
+CREATE TABLE breakthrough (
+  elution_id    TEXT PRIMARY KEY REFERENCES elution(id),
+  tested_at     TEXT NOT NULL,
+  moly          TEXT NOT NULL,
+  technetium    TEXT NOT NULL,
+  aluminium_ppm TEXT NOT NULL,
+  tested_by     TEXT NOT NULL
+);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
+    Migration(3, "eluate tests", ELUATE_TESTS),
 )
 
 
