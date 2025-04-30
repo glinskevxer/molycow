@@ -100,10 +100,41 @@ CREATE TABLE breakthrough (
 """
 
 
+COMPOUNDING = """
+CREATE TABLE kit_lot (
+  id          TEXT PRIMARY KEY,
+  code        TEXT NOT NULL,
+  maker       TEXT NOT NULL,
+  lot         TEXT NOT NULL,
+  received_on TEXT NOT NULL,
+  expires_on  TEXT NOT NULL,
+  vials       INTEGER NOT NULL,
+  UNIQUE (code, lot)
+);
+
+CREATE TABLE batch (
+  id          TEXT PRIMARY KEY,
+  kit_lot_id  TEXT NOT NULL REFERENCES kit_lot(id),
+  elution_id  TEXT NOT NULL REFERENCES elution(id),
+  code        TEXT NOT NULL,
+  made_at     TEXT NOT NULL,
+  activity    TEXT NOT NULL,
+  volume      TEXT NOT NULL,
+  made_by     TEXT NOT NULL,
+  rcp         TEXT
+);
+
+CREATE INDEX batch_by_elution ON batch(elution_id);
+CREATE INDEX batch_by_made_at ON batch(made_at);
+CREATE INDEX kit_lot_by_code ON kit_lot(code, expires_on);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
     Migration(3, "eluate tests", ELUATE_TESTS),
+    Migration(4, "compounding", COMPOUNDING),
 )
 
 
