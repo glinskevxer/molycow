@@ -31,8 +31,13 @@ class Plan:
     kit_lot: KitLot
     elution_id: str
     volume: Volume
+    eluate_volume: Volume
     activity: Activity
     made_at: dt.datetime
+
+    @property
+    def saline(self) -> Volume:
+        return self.volume - self.eluate_volume
 
 
 class CompoundService:
@@ -50,7 +55,7 @@ class CompoundService:
         """How much has already been taken out of an elution vial."""
         taken = Volume.zero()
         for batch in self._batches.for_elution(elution_id):
-            taken = taken + batch.volume
+            taken = taken + batch.eluate_volume
         return taken
 
     def remaining_in(self, elution_id: str) -> Volume:
@@ -58,8 +63,21 @@ class CompoundService:
         elution = self._elutions.get(elution_id)
         return elution.volume - self.drawn_from(elution_id)
 
-    def plan(self, code: str, elution_id: str, at: dt.datetime, wanted: Activity) -> Plan:
-        """Work out the prep without writing anything down."""
+    def plan(
+        self,
+        code: str,
+        elution_id: str,
+        at: dt.datetime,
+        wanted: Activity,
+        volume: Volume | None = None,
+    ) -> Plan:
+        """Work out the prep without writing anything down.
+
+        ``volume`` is what the finished vial is made up to. Saline covers the
+        difference between it and the eluate the activity actually needs, which
+        is what lets a small activity still be made up to the volume the insert
+        wants.
+        """
         monograph = formula(code)
         elution = self._elutions.get(elution_id)
         if not self._release.may_draw(elution_id, at):
@@ -71,22 +89,31 @@ class CompoundService:
         lot = self._lots.oldest_in_date(monograph.code, day_of(at, self._tz))
         if lot is None:
             raise NotFoundError("no kit of that sort is in date", kit=monograph.code)
-        volume = elution.concentration_at(at).volume_for(wanted)
-        if volume.is_zero():
+        eluate_volume = elution.concentration_at(at).volume_for(wanted)
+        if eluate_volume.is_zero():
             raise RuleError(
                 "prep-volume", "that activity works out at no volume at all", kit=monograph.code
             )
-        monograph.check(wanted, volume)
+        made_up = volume if volume is not None else max(eluate_volume, monograph.min_volume)
+        if eluate_volume > made_up:
+            raise RuleError(
+                "prep-volume",
+                "that activity needs more eluate than the vial is made up to",
+                kit=monograph.code,
+                eluate=str(eluate_volume),
+                volume=str(made_up),
+            )
+        monograph.check(wanted, made_up)
         remaining = self.remaining_in(elution_id)
-        if volume > remaining:
+        if eluate_volume > remaining:
             raise RuleError(
                 "eluate-short",
                 "there is not enough left in that elution vial",
                 elution=elution_id,
-                wanted=str(volume),
+                wanted=str(eluate_volume),
                 left=str(remaining),
             )
-        return Plan(monograph, lot, elution_id, volume, wanted, at)
+        return Plan(monograph, lot, elution_id, made_up, eluate_volume, wanted, at)
 
     def compound(
         self,
@@ -95,9 +122,10 @@ class CompoundService:
         at: dt.datetime,
         wanted: Activity,
         made_by: str,
+        volume: Volume | None = None,
     ) -> Batch:
         """Make the batch up and write it in the book."""
-        prepared = self.plan(code, elution_id, at, wanted)
+        prepared = self.plan(code, elution_id, at, wanted, volume)
         batch = Batch(
             id=self._batches.next_id(day_of(at, self._tz)),
             kit_lot_id=prepared.kit_lot.id,
@@ -106,6 +134,7 @@ class CompoundService:
             made_at=at,
             activity=prepared.activity,
             volume=prepared.volume,
+            eluate_volume=prepared.eluate_volume,
             made_by=made_by,
         )
         with self._book.atomic():

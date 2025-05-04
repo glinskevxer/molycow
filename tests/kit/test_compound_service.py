@@ -165,3 +165,39 @@ def test_an_elution_that_is_not_there(book: Book) -> None:
     service = CompoundService(book)
     with pytest.raises(NotFoundError, match="no such elution"):
         service.remaining_in("EL-250408-09")
+
+
+def test_a_small_activity_is_still_made_up_to_the_inserts_volume(book: Book) -> None:
+    elution_id = a_bench(book)
+    service = CompoundService(book)
+    batch = service.compound("MDP", elution_id, PREP, Activity.of(120, "mci"), "K. Ruzicka")
+    assert batch.volume == Volume.of(3)
+    assert batch.eluate_volume < Volume.of(3)
+    assert batch.saline > Volume.zero()
+
+
+def test_the_bench_can_ask_for_a_bigger_made_volume(book: Book) -> None:
+    elution_id = a_bench(book)
+    service = CompoundService(book)
+    batch = service.compound(
+        "MDP", elution_id, PREP, Activity.of(300, "mci"), "K. Ruzicka", volume=Volume.of(8)
+    )
+    assert batch.volume == Volume.of(8)
+    assert batch.concentration.format() == "37.500 mCi/mL"
+
+
+def test_a_made_volume_smaller_than_the_eluate_needed_is_refused(book: Book) -> None:
+    elution_id = a_bench(book)
+    service = CompoundService(book)
+    with pytest.raises(RuleError, match="more eluate than the vial"):
+        service.compound(
+            "MDP", elution_id, PREP, Activity.of(400, "mci"), "K. Ruzicka", volume=Volume.of(3)
+        )
+
+
+def test_only_the_eluate_that_went_in_comes_off_the_elution_vial(book: Book) -> None:
+    elution_id = a_bench(book)
+    service = CompoundService(book)
+    batch = service.compound("MDP", elution_id, PREP, Activity.of(120, "mci"), "K. Ruzicka")
+    assert service.drawn_from(elution_id) == batch.eluate_volume
+    assert service.remaining_in(elution_id) > Volume.of(7)

@@ -34,6 +34,7 @@ def a_batch(**changed: object) -> Batch:
         "made_at": MADE,
         "activity": Activity.of(300, "mci"),
         "volume": Volume.of(6),
+        "eluate_volume": Volume.of("3.5"),
         "made_by": "K. Ruzicka",
     }
     fields.update(changed)
@@ -69,7 +70,12 @@ def test_a_kit_lot_is_in_date_between_its_dates() -> None:
 
 def test_a_batch_takes_its_shelf_life_from_the_monograph() -> None:
     assert a_batch().expires_at == at("2025-04-08 13:15")
-    sesta = a_batch(code="SESTA", activity=Activity.of(140, "mci"), volume=Volume.of(2))
+    sesta = a_batch(
+        code="SESTA",
+        activity=Activity.of(140, "mci"),
+        volume=Volume.of(2),
+        eluate_volume=Volume.of("1.6"),
+    )
     assert sesta.expires_at == at("2025-04-08 13:15")
     maa = a_batch(code="MAA", activity=Activity.of(100, "mci"), volume=Volume.of(6))
     assert maa.expires_at == at("2025-04-08 15:15")
@@ -79,7 +85,7 @@ def test_a_batch_outside_the_insert_is_refused_when_it_is_made() -> None:
     with pytest.raises(ValidationError, match="outside what the insert allows"):
         a_batch(activity=Activity.of(500, "mci"))
     with pytest.raises(ValidationError, match="outside what the insert allows"):
-        a_batch(volume=Volume.of(1))
+        a_batch(volume=Volume.of(1), eluate_volume=Volume.of("0.9"))
 
 
 def test_a_batch_is_signed() -> None:
@@ -138,6 +144,31 @@ def test_a_purity_reading_is_a_percentage() -> None:
 
 
 def test_the_colloid_floor_is_higher_than_the_bone_agent() -> None:
-    colloid = a_batch(code="SC", activity=Activity.of(50, "mci"), volume=Volume.of(3))
+    colloid = a_batch(
+        code="SC",
+        activity=Activity.of(50, "mci"),
+        volume=Volume.of(3),
+        eluate_volume=Volume.of("0.6"),
+    )
     assert not colloid.with_purity(Decimal("91")).is_pure_enough
     assert a_batch().with_purity(Decimal("91")).is_pure_enough
+
+
+def test_saline_makes_up_the_rest_of_the_vial() -> None:
+    batch = a_batch()
+    assert batch.saline == Volume.of("2.5")
+    assert batch.concentration.format() == "50.000 mCi/mL"
+
+
+def test_a_vial_with_no_eluate_in_it_is_refused() -> None:
+    with pytest.raises(ValidationError, match="no eluate in it"):
+        a_batch(eluate_volume=Volume.zero())
+
+
+def test_more_eluate_than_the_vial_holds_is_refused() -> None:
+    with pytest.raises(ValidationError, match="more eluate went in"):
+        a_batch(eluate_volume=Volume.of(8))
+
+
+def test_a_vial_made_up_of_nothing_but_eluate_has_no_saline() -> None:
+    assert a_batch(eluate_volume=Volume.of(6)).saline == Volume.zero()

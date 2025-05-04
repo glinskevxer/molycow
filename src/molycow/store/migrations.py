@@ -130,11 +130,19 @@ CREATE INDEX kit_lot_by_code ON kit_lot(code, expires_on);
 """
 
 
+SALINE_ON_BATCHES = """
+ALTER TABLE batch ADD COLUMN eluate_volume TEXT NOT NULL DEFAULT '0';
+
+UPDATE batch SET eluate_volume = volume WHERE eluate_volume = '0';
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
     Migration(3, "eluate tests", ELUATE_TESTS),
     Migration(4, "compounding", COMPOUNDING),
+    Migration(5, "saline on batches", SALINE_ON_BATCHES),
 )
 
 

@@ -49,6 +49,7 @@ def batch_from(row: sqlite3.Row) -> Batch:
         made_at=moment_in(row["made_at"], "made_at"),
         activity=activity_in(row["activity"], "activity"),
         volume=volume_in(row["volume"], "volume"),
+        eluate_volume=volume_in(row["eluate_volume"], "eluate_volume"),
         made_by=text_in(row, "made_by"),
         rcp=None if rcp is None else decimal_in(rcp, "rcp"),
     )
@@ -125,8 +126,9 @@ class BatchRepository:
         self._book.execute(
             """
             INSERT INTO batch
-              (id, kit_lot_id, elution_id, code, made_at, activity, volume, made_by, rcp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              (id, kit_lot_id, elution_id, code, made_at, activity, volume,
+               eluate_volume, made_by, rcp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 batch.id,
@@ -136,6 +138,7 @@ class BatchRepository:
                 moment_out(batch.made_at),
                 activity_out(batch.activity),
                 volume_out(batch.volume),
+                volume_out(batch.eluate_volume),
                 batch.made_by,
                 None if batch.rcp is None else decimal_out(batch.rcp),
             ),

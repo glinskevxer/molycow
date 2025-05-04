@@ -55,6 +55,7 @@ def a_batch(batch_id: str = "B-250408-01", **changed: object) -> Batch:
         "made_at": at("2025-04-08 07:15"),
         "activity": Activity.of(300, "mci"),
         "volume": Volume.of(6),
+        "eluate_volume": Volume.of("3.5"),
         "made_by": "K. Ruzicka",
     }
     fields.update(changed)

@@ -63,6 +63,7 @@ class Batch:
     made_at: dt.datetime
     activity: Activity
     volume: Volume
+    eluate_volume: Volume
     made_by: str
     rcp: Decimal | None = None
 
@@ -73,6 +74,15 @@ class Batch:
         object.__setattr__(self, "code", formula(self.code).code)
         if not self.made_by.strip():
             raise ValidationError("a batch is signed by whoever compounded it", id=self.id)
+        if self.eluate_volume.is_zero():
+            raise ValidationError("a batch with no eluate in it has no activity", id=self.id)
+        if self.eluate_volume > self.volume:
+            raise ValidationError(
+                "more eluate went in than the vial holds",
+                id=self.id,
+                eluate=str(self.eluate_volume),
+                volume=str(self.volume),
+            )
         self.formula.check(self.activity, self.volume)
         if self.rcp is not None and not (Decimal(0) <= self.rcp <= Decimal(100)):
             raise ValidationError("a purity reading is a percentage", id=self.id, rcp=str(self.rcp))
@@ -80,6 +90,11 @@ class Batch:
     @property
     def formula(self) -> Formula:
         return formula(self.code)
+
+    @property
+    def saline(self) -> Volume:
+        """The saline added to bring the vial up to its made volume."""
+        return self.volume - self.eluate_volume
 
     @property
     def expires_at(self) -> dt.datetime:
@@ -122,6 +137,7 @@ class Batch:
             made_at=self.made_at,
             activity=self.activity,
             volume=self.volume,
+            eluate_volume=self.eluate_volume,
             made_by=self.made_by,
             rcp=rcp,
         )
