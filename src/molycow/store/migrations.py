@@ -137,12 +137,28 @@ UPDATE batch SET eluate_volume = volume WHERE eluate_volume = '0';
 """
 
 
+PURITY_STRIPS = """
+CREATE TABLE purity_test (
+  batch_id           TEXT PRIMARY KEY REFERENCES batch(id),
+  tested_at          TEXT NOT NULL,
+  solvent_origin     INTEGER NOT NULL,
+  solvent_front      INTEGER NOT NULL,
+  solvent_background INTEGER NOT NULL,
+  saline_origin      INTEGER NOT NULL,
+  saline_front       INTEGER NOT NULL,
+  saline_background  INTEGER NOT NULL,
+  tested_by          TEXT NOT NULL
+);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
     Migration(3, "eluate tests", ELUATE_TESTS),
     Migration(4, "compounding", COMPOUNDING),
     Migration(5, "saline on batches", SALINE_ON_BATCHES),
+    Migration(6, "purity strips", PURITY_STRIPS),
 )
 
 
