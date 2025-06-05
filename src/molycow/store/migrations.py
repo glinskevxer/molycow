@@ -152,6 +152,26 @@ CREATE TABLE purity_test (
 """
 
 
+ORDER_BOOK = """
+CREATE TABLE customer_order (
+  id             TEXT PRIMARY KEY,
+  customer_id    TEXT NOT NULL REFERENCES customer(id),
+  user_id        TEXT NOT NULL REFERENCES authorized_user(id),
+  code           TEXT NOT NULL,
+  procedure      TEXT NOT NULL,
+  patient_ref    TEXT NOT NULL,
+  activity       TEXT NOT NULL,
+  calibration_at TEXT NOT NULL,
+  ordered_at     TEXT NOT NULL,
+  state          TEXT NOT NULL CHECK (state IN ('open', 'filled', 'cancelled'))
+);
+
+CREATE INDEX customer_order_by_customer ON customer_order(customer_id, calibration_at);
+CREATE INDEX customer_order_by_calibration ON customer_order(calibration_at);
+CREATE INDEX customer_order_by_state ON customer_order(state);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -159,6 +179,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(4, "compounding", COMPOUNDING),
     Migration(5, "saline on batches", SALINE_ON_BATCHES),
     Migration(6, "purity strips", PURITY_STRIPS),
+    Migration(7, "order book", ORDER_BOOK),
 )
 
 
