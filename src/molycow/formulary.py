@@ -31,6 +31,8 @@ class Formula:
     incubate_minutes: int
     boil: bool
     rcp_floor: Decimal
+    dose_low: Activity
+    dose_high: Activity
     refrigerate: bool = False
 
     def activity_fits(self, activity: Activity) -> bool:
@@ -54,6 +56,19 @@ class Formula:
                 kit=self.code,
                 volume=str(volume),
                 allowed=f"{self.min_volume} to {self.max_volume}",
+            )
+
+    def dose_fits(self, activity: Activity) -> bool:
+        """Whether an activity is a sensible adult unit dose of this product."""
+        return self.dose_low <= activity <= self.dose_high
+
+    def check_dose(self, activity: Activity) -> None:
+        if not self.dose_fits(activity):
+            raise ValidationError(
+                "that is not an adult dose of this product",
+                kit=self.code,
+                activity=str(activity),
+                usual=f"{self.dose_low} to {self.dose_high}",
             )
 
     @property
@@ -85,6 +100,8 @@ _TABLE: tuple[Formula, ...] = (
         incubate_minutes=0,
         boil=False,
         rcp_floor=Decimal(90),
+        dose_low=_mci("15"),
+        dose_high=_mci("30"),
     ),
     Formula(
         code="SESTA",
@@ -98,6 +115,8 @@ _TABLE: tuple[Formula, ...] = (
         incubate_minutes=10,
         boil=True,
         rcp_floor=Decimal(90),
+        dose_low=_mci("8"),
+        dose_high=_mci("35"),
     ),
     Formula(
         code="MAA",
@@ -112,6 +131,8 @@ _TABLE: tuple[Formula, ...] = (
         boil=False,
         rcp_floor=Decimal(90),
         refrigerate=True,
+        dose_low=_mci("1"),
+        dose_high=_mci("6"),
     ),
     Formula(
         code="MAG3",
@@ -125,6 +146,8 @@ _TABLE: tuple[Formula, ...] = (
         incubate_minutes=10,
         boil=True,
         rcp_floor=Decimal(90),
+        dose_low=_mci("2"),
+        dose_high=_mci("12"),
     ),
     Formula(
         code="SC",
@@ -138,6 +161,8 @@ _TABLE: tuple[Formula, ...] = (
         incubate_minutes=5,
         boil=True,
         rcp_floor=Decimal(92),
+        dose_low=_mci("0.5"),
+        dose_high=_mci("12"),
     ),
     Formula(
         code="PYP",
@@ -151,6 +176,8 @@ _TABLE: tuple[Formula, ...] = (
         incubate_minutes=0,
         boil=False,
         rcp_floor=Decimal(90),
+        dose_low=_mci("10"),
+        dose_high=_mci("25"),
     ),
     Formula(
         code="DTPA",
@@ -164,6 +191,8 @@ _TABLE: tuple[Formula, ...] = (
         incubate_minutes=0,
         boil=False,
         rcp_floor=Decimal(90),
+        dose_low=_mci("2"),
+        dose_high=_mci("20"),
     ),
     Formula(
         code="MDPHDP",
@@ -177,6 +206,8 @@ _TABLE: tuple[Formula, ...] = (
         incubate_minutes=0,
         boil=False,
         rcp_floor=Decimal(90),
+        dose_low=_mci("15"),
+        dose_high=_mci("30"),
     ),
 )
 
