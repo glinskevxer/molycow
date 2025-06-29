@@ -172,6 +172,25 @@ CREATE INDEX customer_order_by_state ON customer_order(state);
 """
 
 
+DISPENSING = """
+CREATE TABLE dose (
+  id             TEXT PRIMARY KEY,
+  order_id       TEXT NOT NULL REFERENCES customer_order(id),
+  batch_id       TEXT NOT NULL REFERENCES batch(id),
+  code           TEXT NOT NULL,
+  drawn_at       TEXT NOT NULL,
+  calibration_at TEXT NOT NULL,
+  volume         TEXT NOT NULL,
+  assayed        TEXT NOT NULL,
+  drawn_by       TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX dose_by_order ON dose(order_id);
+CREATE INDEX dose_by_batch ON dose(batch_id);
+CREATE INDEX dose_by_drawn_at ON dose(drawn_at);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -180,6 +199,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(5, "saline on batches", SALINE_ON_BATCHES),
     Migration(6, "purity strips", PURITY_STRIPS),
     Migration(7, "order book", ORDER_BOOK),
+    Migration(8, "dispensing", DISPENSING),
 )
 
 
