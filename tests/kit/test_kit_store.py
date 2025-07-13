@@ -3,13 +3,11 @@ from decimal import Decimal
 
 import pytest
 from tests.conftest import at
+from tests.support import an_elution
 
 from molycow.errors import ConflictError, NotFoundError
-from molycow.model.generator import Generator
 from molycow.model.kit import Batch, KitLot
-from molycow.service.elution import ElutionService
 from molycow.store import Book
-from molycow.store.generators import GeneratorRepository
 from molycow.store.kits import BatchRepository, KitLotRepository
 from molycow.units import Activity, Volume
 
@@ -26,24 +24,6 @@ def a_lot(lot_id: str = "KL-0114", **changed: object) -> KitLot:
     }
     fields.update(changed)
     return KitLot(**fields)  # type: ignore[arg-type]
-
-
-def an_elution(book: Book) -> str:
-    GeneratorRepository(book).add(
-        Generator(
-            id="GEN-0027",
-            serial="M99-44182",
-            maker="Corren Isotopes",
-            calibrated_at=at("2025-04-05 12:00"),
-            calibrated_activity=Activity.of(2, "Ci"),
-            received_on=dt.date(2025, 4, 5),
-            expires_on=dt.date(2025, 4, 19),
-        )
-    )
-    milking = ElutionService(book).milk(
-        "GEN-0027", at("2025-04-08 06:30"), Volume.of(10), Activity.of(940, "mCi")
-    )
-    return milking.elution.id
 
 
 def a_batch(batch_id: str = "B-250408-01", **changed: object) -> Batch:

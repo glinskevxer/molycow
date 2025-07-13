@@ -1,24 +1,13 @@
 import datetime as dt
-from decimal import Decimal
 
 import pytest
 from tests.conftest import at
+from tests.support import a_batch, a_register, an_order
 
 from molycow.errors import ConflictError, NotFoundError
-from molycow.model import AuthorizedUser, Customer, CustomerKind
 from molycow.model.dose import Dose
-from molycow.model.generator import Generator
-from molycow.model.kit import KitLot
-from molycow.model.order import Order
-from molycow.service.breakthrough import BreakthroughService
-from molycow.service.compound import CompoundService
-from molycow.service.elution import ElutionService
 from molycow.store import Book
 from molycow.store.doses import DoseRepository
-from molycow.store.generators import GeneratorRepository
-from molycow.store.kits import KitLotRepository
-from molycow.store.orders import OrderRepository
-from molycow.store.register import AuthorizedUserRepository, CustomerRepository
 from molycow.units import Activity, Volume
 
 DRAWN = at("2025-04-08 07:40")
@@ -26,73 +15,10 @@ CALIBRATION = at("2025-04-08 09:00")
 
 
 def a_day(book: Book) -> str:
-    CustomerRepository(book).add(
-        Customer(
-            id="CU-0001",
-            name="Saint Brannon Medical Centre",
-            kind=CustomerKind.HOSPITAL,
-            licence="42-28931-01",
-            street="1400 Weir Street",
-            town="Ardmore",
-            zone="north",
-            opened_on=dt.date(2025, 1, 6),
-        )
-    )
-    AuthorizedUserRepository(book).add(
-        AuthorizedUser(
-            id="AU-0004",
-            customer_id="CU-0001",
-            name="R. Okonkwo",
-            licence="42-28931-01",
-            added_on=dt.date(2025, 1, 6),
-            nuclides=frozenset({"Tc-99m"}),
-        )
-    )
-    OrderRepository(book).add(
-        Order(
-            id="ORD-250407-11",
-            customer_id="CU-0001",
-            user_id="AU-0004",
-            code="MDP",
-            procedure="whole body bone",
-            patient_ref="A-4471902",
-            activity=Activity.of(22, "mci"),
-            calibration_at=CALIBRATION,
-            ordered_at=at("2025-04-07 16:10"),
-        )
-    )
-    GeneratorRepository(book).add(
-        Generator(
-            id="GEN-0027",
-            serial="M99-44182",
-            maker="Corren Isotopes",
-            calibrated_at=at("2025-04-05 12:00"),
-            calibrated_activity=Activity.of(2, "Ci"),
-            received_on=dt.date(2025, 4, 5),
-            expires_on=dt.date(2025, 4, 19),
-        )
-    )
-    milking = ElutionService(book).milk(
-        "GEN-0027", at("2025-04-08 06:30"), Volume.of(10), Activity.of(940, "mCi")
-    )
-    BreakthroughService(book).test(
-        milking.elution.id, at("2025-04-08 06:45"), Activity.of("0.9", "uci"), Decimal(4), "KR"
-    )
-    KitLotRepository(book).add(
-        KitLot(
-            id="KL-0114",
-            code="MDP",
-            maker="Sedgwick Radiochem",
-            lot="9F4471",
-            received_on=dt.date(2025, 3, 20),
-            expires_on=dt.date(2026, 3, 31),
-            vials=30,
-        )
-    )
-    batch = CompoundService(book).compound(
-        "MDP", milking.elution.id, at("2025-04-08 07:15"), Activity.of(300, "mci"), "K. Ruzicka"
-    )
-    return batch.id
+    """A register, an open order and a batch to fill it from."""
+    a_register(book)
+    an_order(book)
+    return a_batch(book)
 
 
 def a_dose(dose_id: str = "DS-250408-14", **changed: object) -> Dose:

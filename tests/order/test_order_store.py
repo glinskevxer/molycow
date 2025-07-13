@@ -2,41 +2,15 @@ import datetime as dt
 
 import pytest
 from tests.conftest import at
+from tests.support import a_register
 
 from molycow.errors import NotFoundError
-from molycow.model import AuthorizedUser, Customer, CustomerKind
 from molycow.model.order import Order, OrderState
 from molycow.store import Book
 from molycow.store.orders import OrderRepository
-from molycow.store.register import AuthorizedUserRepository, CustomerRepository
 from molycow.units import Activity
 
 ORDERED = at("2025-04-07 16:10")
-
-
-def a_register(book: Book) -> None:
-    CustomerRepository(book).add(
-        Customer(
-            id="CU-0001",
-            name="Saint Brannon Medical Centre",
-            kind=CustomerKind.HOSPITAL,
-            licence="42-28931-01",
-            street="1400 Weir Street",
-            town="Ardmore",
-            zone="north",
-            opened_on=dt.date(2025, 1, 6),
-        )
-    )
-    AuthorizedUserRepository(book).add(
-        AuthorizedUser(
-            id="AU-0004",
-            customer_id="CU-0001",
-            name="R. Okonkwo",
-            licence="42-28931-01",
-            added_on=dt.date(2025, 1, 6),
-            nuclides=frozenset({"Tc-99m"}),
-        )
-    )
 
 
 def an_order(order_id: str = "ORD-250407-11", **changed: object) -> Order:

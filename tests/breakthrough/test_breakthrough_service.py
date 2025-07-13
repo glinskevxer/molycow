@@ -1,36 +1,21 @@
-import datetime as dt
 from decimal import Decimal
 
 import pytest
 from tests.conftest import at
+from tests.support import an_elution
 
 from molycow.errors import NotFoundError, ReleaseError
-from molycow.model.generator import Generator
 from molycow.service.breakthrough import BreakthroughService
-from molycow.service.elution import ElutionService
 from molycow.store import Book
 from molycow.store.breakthrough import BreakthroughRepository
-from molycow.store.generators import GeneratorRepository
-from molycow.units import Activity, Volume
+from molycow.units import Activity
 
 DRAWN = at("2025-04-08 06:30")
 TESTED = at("2025-04-08 06:45")
 
 
 def a_bench(book: Book) -> str:
-    GeneratorRepository(book).add(
-        Generator(
-            id="GEN-0027",
-            serial="M99-44182",
-            maker="Corren Isotopes",
-            calibrated_at=at("2025-04-05 12:00"),
-            calibrated_activity=Activity.of(2, "Ci"),
-            received_on=dt.date(2025, 4, 5),
-            expires_on=dt.date(2025, 4, 19),
-        )
-    )
-    milking = ElutionService(book).milk("GEN-0027", DRAWN, Volume.of(10), Activity.of(940, "mCi"))
-    return milking.elution.id
+    return an_elution(book, tested=False)
 
 
 def test_a_test_measures_against_the_technetium_in_the_vial_now(book: Book) -> None:

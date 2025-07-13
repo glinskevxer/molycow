@@ -1,53 +1,23 @@
-import datetime as dt
 from decimal import Decimal
 
 import pytest
 from tests.conftest import at
+from tests.support import PREPPED as PREP
+from tests.support import a_kit_lot, an_elution
 
 from molycow.errors import NotFoundError, RuleError
-from molycow.model.generator import Generator
-from molycow.model.kit import KitLot
-from molycow.service.breakthrough import BreakthroughService
 from molycow.service.compound import CompoundService
-from molycow.service.elution import ElutionService
 from molycow.store import Book
-from molycow.store.generators import GeneratorRepository
-from molycow.store.kits import BatchRepository, KitLotRepository
+from molycow.store.kits import BatchRepository
 from molycow.units import Activity, Volume
 
 DRAWN = at("2025-04-08 06:30")
-PREP = at("2025-04-08 07:15")
 
 
 def a_bench(book: Book, tested: bool = True) -> str:
-    GeneratorRepository(book).add(
-        Generator(
-            id="GEN-0027",
-            serial="M99-44182",
-            maker="Corren Isotopes",
-            calibrated_at=at("2025-04-05 12:00"),
-            calibrated_activity=Activity.of(2, "Ci"),
-            received_on=dt.date(2025, 4, 5),
-            expires_on=dt.date(2025, 4, 19),
-        )
-    )
-    milking = ElutionService(book).milk("GEN-0027", DRAWN, Volume.of(10), Activity.of(940, "mCi"))
-    if tested:
-        BreakthroughService(book).test(
-            milking.elution.id, at("2025-04-08 06:45"), Activity.of("0.9", "uci"), Decimal(4), "KR"
-        )
-    KitLotRepository(book).add(
-        KitLot(
-            id="KL-0114",
-            code="MDP",
-            maker="Sedgwick Radiochem",
-            lot="9F4471",
-            received_on=dt.date(2025, 3, 20),
-            expires_on=dt.date(2026, 3, 31),
-            vials=30,
-        )
-    )
-    return milking.elution.id
+    elution_id = an_elution(book, tested=tested)
+    a_kit_lot(book)
+    return elution_id
 
 
 def test_the_volume_falls_out_of_the_concentration_at_prep_time(book: Book) -> None:

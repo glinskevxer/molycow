@@ -1,62 +1,17 @@
-import datetime as dt
 from decimal import Decimal
 
 import pytest
 from tests.conftest import at
+from tests.support import CLEAN_SALINE, CLEAN_SOLVENT, a_batch
 
 from molycow.errors import NotFoundError, ReleaseError
-from molycow.model.generator import Generator
-from molycow.model.kit import KitLot
 from molycow.model.purity import Strip, System
-from molycow.service.breakthrough import BreakthroughService
-from molycow.service.compound import CompoundService
-from molycow.service.elution import ElutionService
 from molycow.service.purity import PurityService
 from molycow.store import Book
-from molycow.store.generators import GeneratorRepository
-from molycow.store.kits import BatchRepository, KitLotRepository
-from molycow.units import Activity, Volume
+from molycow.store.kits import BatchRepository
 
 PREP = at("2025-04-08 07:15")
 TESTED = at("2025-04-08 07:35")
-
-CLEAN_SOLVENT = Strip(System.SOLVENT, origin=48200, front=1100)
-CLEAN_SALINE = Strip(System.SALINE, origin=900, front=47600)
-
-
-def a_batch(book: Book) -> str:
-    GeneratorRepository(book).add(
-        Generator(
-            id="GEN-0027",
-            serial="M99-44182",
-            maker="Corren Isotopes",
-            calibrated_at=at("2025-04-05 12:00"),
-            calibrated_activity=Activity.of(2, "Ci"),
-            received_on=dt.date(2025, 4, 5),
-            expires_on=dt.date(2025, 4, 19),
-        )
-    )
-    milking = ElutionService(book).milk(
-        "GEN-0027", at("2025-04-08 06:30"), Volume.of(10), Activity.of(940, "mCi")
-    )
-    BreakthroughService(book).test(
-        milking.elution.id, at("2025-04-08 06:45"), Activity.of("0.9", "uci"), Decimal(4), "KR"
-    )
-    KitLotRepository(book).add(
-        KitLot(
-            id="KL-0114",
-            code="MDP",
-            maker="Sedgwick Radiochem",
-            lot="9F4471",
-            received_on=dt.date(2025, 3, 20),
-            expires_on=dt.date(2026, 3, 31),
-            vials=30,
-        )
-    )
-    batch = CompoundService(book).compound(
-        "MDP", milking.elution.id, PREP, Activity.of(300, "mci"), "K. Ruzicka"
-    )
-    return batch.id
 
 
 def test_a_clean_reading_releases_the_batch(book: Book) -> None:
