@@ -191,6 +191,55 @@ CREATE INDEX dose_by_drawn_at ON dose(drawn_at);
 """
 
 
+INSTRUMENTS = """
+CREATE TABLE instrument (
+  id            TEXT PRIMARY KEY,
+  kind          TEXT NOT NULL,
+  maker         TEXT NOT NULL,
+  model         TEXT NOT NULL,
+  serial        TEXT NOT NULL UNIQUE,
+  installed_on  TEXT NOT NULL,
+  calibrated_on TEXT NOT NULL,
+  retired_on    TEXT
+);
+
+CREATE TABLE check_source (
+  serial              TEXT PRIMARY KEY,
+  symbol              TEXT NOT NULL,
+  certified_activity  TEXT NOT NULL,
+  certified_on        TEXT NOT NULL,
+  retired_on          TEXT
+);
+
+CREATE TABLE qc_check (
+  instrument_id TEXT NOT NULL REFERENCES instrument(id),
+  kind          TEXT NOT NULL,
+  ran_at        TEXT NOT NULL,
+  source_serial TEXT NOT NULL REFERENCES check_source(serial),
+  expected      TEXT NOT NULL,
+  measured      TEXT NOT NULL,
+  checked_by    TEXT NOT NULL,
+  PRIMARY KEY (instrument_id, kind, ran_at)
+);
+
+CREATE TABLE linearity_run (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  instrument_id TEXT NOT NULL REFERENCES instrument(id),
+  symbol        TEXT NOT NULL,
+  checked_by    TEXT NOT NULL
+);
+
+CREATE TABLE linearity_point (
+  run_id   INTEGER NOT NULL REFERENCES linearity_run(id) ON DELETE CASCADE,
+  read_at  TEXT NOT NULL,
+  measured TEXT NOT NULL,
+  PRIMARY KEY (run_id, read_at)
+);
+
+CREATE INDEX qc_check_by_instrument ON qc_check(instrument_id, ran_at);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -200,6 +249,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(6, "purity strips", PURITY_STRIPS),
     Migration(7, "order book", ORDER_BOOK),
     Migration(8, "dispensing", DISPENSING),
+    Migration(9, "instruments", INSTRUMENTS),
 )
 
 
