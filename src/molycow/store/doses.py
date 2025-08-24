@@ -14,6 +14,7 @@ from molycow.store.book import Book
 from molycow.store.rows import (
     activity_in,
     activity_out,
+    maybe_text_in,
     moment_in,
     moment_out,
     text_in,
@@ -33,6 +34,7 @@ def dose_from(row: sqlite3.Row) -> Dose:
         volume=volume_in(row["volume"], "volume"),
         assayed=activity_in(row["assayed"], "assayed"),
         drawn_by=text_in(row, "drawn_by"),
+        calibrator_id=maybe_text_in(row, "calibrator_id"),
     )
 
 
@@ -47,8 +49,8 @@ class DoseRepository:
             """
             INSERT INTO dose
               (id, order_id, batch_id, code, drawn_at, calibration_at,
-               volume, assayed, drawn_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+               volume, assayed, drawn_by, calibrator_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 dose.id,
@@ -60,6 +62,7 @@ class DoseRepository:
                 volume_out(dose.volume),
                 activity_out(dose.assayed),
                 dose.drawn_by,
+                dose.calibrator_id,
             ),
         )
         return dose

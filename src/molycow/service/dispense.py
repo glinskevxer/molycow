@@ -30,6 +30,7 @@ from molycow.model.kit import Batch
 from molycow.model.order import Order
 from molycow.nuclides import nuclide
 from molycow.service.purity import PurityService
+from molycow.service.qc import QcService
 from molycow.store.book import Book
 from molycow.store.doses import DoseRepository
 from molycow.store.kits import BatchRepository
@@ -62,6 +63,7 @@ class DispenseService:
         self._batches = BatchRepository(book)
         self._doses = DoseRepository(book)
         self._purity = PurityService(book)
+        self._qc = QcService(book, self._tz)
 
     def drawn_from(self, batch_id: str) -> Volume:
         taken = Volume.zero()
@@ -115,11 +117,18 @@ class DispenseService:
         at: dt.datetime,
         assayed: Activity,
         drawn_by: str,
+        calibrator_id: str,
         volume: Volume | None = None,
         tolerance: Decimal = TOLERANCE_PERCENT,
     ) -> Dose:
-        """Fill the syringe, assay it, and close the order."""
+        """Fill the syringe, assay it, and close the order.
+
+        The calibrator that read the syringe is named on the dose, and it has
+        to have passed its constancy check that morning. A syringe assayed on
+        an unchecked calibrator is a number nobody can stand behind later.
+        """
         planned = self.plan(order_id, batch_id, at)
+        self._qc.require_checked(calibrator_id, day_of(at, self._tz))
         drawn_volume = volume if volume is not None else planned.volume
         if drawn_volume > self.remaining_in(batch_id):
             raise RuleError(
@@ -139,6 +148,7 @@ class DispenseService:
             volume=drawn_volume,
             assayed=assayed,
             drawn_by=drawn_by,
+            calibrator_id=calibrator_id,
         )
         if not dose.within_tolerance(planned.order.activity, tolerance):
             raise ReleaseError(

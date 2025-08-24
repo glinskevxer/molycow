@@ -240,6 +240,11 @@ CREATE INDEX qc_check_by_instrument ON qc_check(instrument_id, ran_at);
 """
 
 
+ASSAY_ON_THE_DOSE = """
+ALTER TABLE dose ADD COLUMN calibrator_id TEXT REFERENCES instrument(id);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -250,6 +255,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(7, "order book", ORDER_BOOK),
     Migration(8, "dispensing", DISPENSING),
     Migration(9, "instruments", INSTRUMENTS),
+    Migration(10, "assay on the dose", ASSAY_ON_THE_DOSE),
 )
 
 

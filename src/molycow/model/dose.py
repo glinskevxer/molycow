@@ -37,6 +37,7 @@ class Dose:
     volume: Volume
     assayed: Activity
     drawn_by: str
+    calibrator_id: str | None = None
 
     def __post_init__(self) -> None:
         expect(self.id, Kind.DOSE)
@@ -56,6 +57,8 @@ class Dose:
             )
         if not self.drawn_by.strip():
             raise ValidationError("a dose is signed by whoever drew it", id=self.id)
+        if self.calibrator_id is not None:
+            expect(self.calibrator_id, Kind.INSTRUMENT)
 
     @property
     def formula(self) -> Formula:

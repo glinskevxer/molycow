@@ -3,9 +3,9 @@ from decimal import Decimal
 
 import pytest
 from tests.conftest import at
-from tests.support import a_batch, a_register, a_released_batch, an_order
+from tests.support import a_batch, a_calibrator, a_register, a_released_batch, an_order
 
-from molycow.errors import ReleaseError, RuleError
+from molycow.errors import ReleaseError, RuleError, SafetyError
 from molycow.service.dispense import DispenseService
 from molycow.store import Book
 from molycow.store.orders import OrderRepository
@@ -17,12 +17,14 @@ DRAW = at("2025-04-08 07:40")
 def a_day(book: Book) -> str:
     a_register(book)
     an_order(book)
+    a_calibrator(book)
     return a_batch(book)
 
 
 def a_bench_with_a_released_batch(book: Book) -> str:
     a_register(book)
     an_order(book)
+    a_calibrator(book)
     return a_released_batch(book)
 
 
@@ -48,7 +50,7 @@ def test_drawing_fills_the_syringe_and_closes_the_order(book: Book) -> None:
     batch_id = a_bench_with_a_released_batch(book)
     service = DispenseService(book)
     planned = service.plan("ORD-250407-11", batch_id, DRAW)
-    dose = service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka")
+    dose = service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka", "IC-0003")
     assert dose.id == "DS-250408-01"
     assert dose.within_tolerance(Activity.of(22, "mci"))
     assert not OrderRepository(book).get("ORD-250407-11").is_open()
@@ -59,7 +61,9 @@ def test_a_syringe_that_assays_light_goes_back(book: Book) -> None:
     batch_id = a_bench_with_a_released_batch(book)
     service = DispenseService(book)
     with pytest.raises(ReleaseError, match="does not assay close enough"):
-        service.draw("ORD-250407-11", batch_id, DRAW, Activity.of(15, "mci"), "K. Ruzicka")
+        service.draw(
+            "ORD-250407-11", batch_id, DRAW, Activity.of(15, "mci"), "K. Ruzicka", "IC-0003"
+        )
     assert OrderRepository(book).get("ORD-250407-11").is_open()
     assert service.for_order("ORD-250407-11") is None
 
@@ -69,7 +73,15 @@ def test_a_tight_tolerance_can_be_asked_for(book: Book) -> None:
     service = DispenseService(book)
     planned = service.plan("ORD-250407-11", batch_id, DRAW)
     slightly_over = planned.needed.scaled(Decimal("1.05"))
-    service.draw("ORD-250407-11", batch_id, DRAW, slightly_over, "K. Ruzicka", tolerance=Decimal(6))
+    service.draw(
+        "ORD-250407-11",
+        batch_id,
+        DRAW,
+        slightly_over,
+        "K. Ruzicka",
+        "IC-0003",
+        tolerance=Decimal(6),
+    )
     assert service.for_order("ORD-250407-11") is not None
 
 
@@ -77,9 +89,9 @@ def test_an_order_cannot_be_filled_twice(book: Book) -> None:
     batch_id = a_bench_with_a_released_batch(book)
     service = DispenseService(book)
     planned = service.plan("ORD-250407-11", batch_id, DRAW)
-    service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka")
+    service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka", "IC-0003")
     with pytest.raises(RuleError, match="not open"):
-        service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka")
+        service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka", "IC-0003")
 
 
 def test_a_held_batch_cannot_be_drawn_from(book: Book) -> None:
@@ -101,7 +113,7 @@ def test_what_is_left_in_the_batch_goes_down(book: Book) -> None:
     service = DispenseService(book)
     before = service.remaining_in(batch_id)
     planned = service.plan("ORD-250407-11", batch_id, DRAW)
-    dose = service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka")
+    dose = service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka", "IC-0003")
     assert service.drawn_from(batch_id) == dose.volume
     assert service.remaining_in(batch_id) == before - dose.volume
 
@@ -117,6 +129,7 @@ def test_a_draw_bigger_than_the_batch_is_refused(book: Book) -> None:
             DRAW,
             planned.needed,
             "K. Ruzicka",
+            "IC-0003",
             volume=Volume.of(9),
         )
 
@@ -132,6 +145,26 @@ def test_the_days_doses_come_back_together(book: Book) -> None:
     batch_id = a_bench_with_a_released_batch(book)
     service = DispenseService(book)
     planned = service.plan("ORD-250407-11", batch_id, DRAW)
-    service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka")
+    service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka", "IC-0003")
     assert len(service.drawn_on(dt.date(2025, 4, 8))) == 1
     assert service.drawn_on(dt.date(2025, 4, 9)) == []
+
+
+def test_the_calibrator_that_read_the_syringe_is_named_on_the_dose(book: Book) -> None:
+    batch_id = a_bench_with_a_released_batch(book)
+    service = DispenseService(book)
+    planned = service.plan("ORD-250407-11", batch_id, DRAW)
+    dose = service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka", "IC-0003")
+    assert dose.calibrator_id == "IC-0003"
+
+
+def test_a_calibrator_with_no_morning_check_stops_the_draw(book: Book) -> None:
+    a_register(book)
+    an_order(book)
+    a_calibrator(book, "IC-0009", checked=False)
+    batch_id = a_released_batch(book)
+    service = DispenseService(book)
+    planned = service.plan("ORD-250407-11", batch_id, DRAW)
+    with pytest.raises(SafetyError, match="not passed its constancy check today"):
+        service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka", "IC-0009")
+    assert OrderRepository(book).get("ORD-250407-11").is_open()

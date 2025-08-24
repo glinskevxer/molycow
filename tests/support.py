@@ -13,6 +13,7 @@ from decimal import Decimal
 
 from molycow.model import AuthorizedUser, Customer, CustomerKind
 from molycow.model.generator import Generator
+from molycow.model.instrument import CheckSource, Instrument, InstrumentKind
 from molycow.model.kit import KitLot
 from molycow.model.order import Order
 from molycow.model.purity import Strip, System
@@ -20,8 +21,10 @@ from molycow.service.breakthrough import BreakthroughService
 from molycow.service.compound import CompoundService
 from molycow.service.elution import ElutionService
 from molycow.service.purity import PurityService
+from molycow.service.qc import QcService
 from molycow.store import Book
 from molycow.store.generators import GeneratorRepository
+from molycow.store.instruments import CheckSourceRepository, InstrumentRepository
 from molycow.store.kits import KitLotRepository
 from molycow.store.orders import OrderRepository
 from molycow.store.register import AuthorizedUserRepository, CustomerRepository
@@ -135,6 +138,36 @@ def a_released_batch(book: Book, code: str = "MDP") -> str:
     return batch_id
 
 
+def a_calibrator(book: Book, instrument_id: str = "IC-0003", checked: bool = True) -> str:
+    """A dose calibrator with a sealed source and this morning's check on it."""
+    InstrumentRepository(book).add(
+        Instrument(
+            id=instrument_id,
+            kind=InstrumentKind.DOSE_CALIBRATOR,
+            maker="Vernay",
+            model="CRC-55tR",
+            serial=f"551-{instrument_id[-4:]}",
+            installed_on=dt.date(2023, 6, 12),
+            calibrated_on=dt.date(2025, 2, 3),
+        )
+    )
+    sources = CheckSourceRepository(book)
+    if sources.find("CS-9912") is None:
+        sources.add(
+            CheckSource(
+                serial="CS-9912",
+                symbol="Cs-137",
+                certified_activity=Activity.of(200, "uci"),
+                certified_on=dt.date(2019, 7, 1),
+            )
+        )
+    if checked:
+        service = QcService(book)
+        expected = sources.get("CS-9912").activity_on(DAY)
+        service.constancy(instrument_id, "CS-9912", at("2025-04-08 06:05"), expected, "K. Ruzicka")
+    return instrument_id
+
+
 def an_order(book: Book, order_id: str = "ORD-250407-11", **changed: object) -> Order:
     fields: dict[str, object] = {
         "id": order_id,
@@ -157,11 +190,12 @@ class Day:
 
     order_id: str
     batch_id: str
+    calibrator_id: str
 
 
 def a_working_day(book: Book) -> Day:
-    """Register, column, eluate, kit, released batch and an open order."""
+    """Register, column, eluate, kit, released batch, calibrator and an order."""
     a_register(book)
     batch_id = a_released_batch(book)
     order = an_order(book)
-    return Day(order.id, batch_id)
+    return Day(order.id, batch_id, a_calibrator(book))
