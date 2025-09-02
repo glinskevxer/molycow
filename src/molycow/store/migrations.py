@@ -245,6 +245,34 @@ ALTER TABLE dose ADD COLUMN calibrator_id TEXT REFERENCES instrument(id);
 """
 
 
+SURVEYS = """
+CREATE TABLE survey (
+  id           TEXT PRIMARY KEY,
+  ran_at       TEXT NOT NULL,
+  surveyed_by  TEXT NOT NULL
+);
+
+CREATE TABLE survey_reading (
+  survey_id TEXT NOT NULL REFERENCES survey(id) ON DELETE CASCADE,
+  area      TEXT NOT NULL,
+  mrem      TEXT NOT NULL,
+  PRIMARY KEY (survey_id, area)
+);
+
+CREATE TABLE survey_wipe (
+  survey_id  TEXT NOT NULL REFERENCES survey(id) ON DELETE CASCADE,
+  area       TEXT NOT NULL,
+  spot       TEXT NOT NULL,
+  counts     INTEGER NOT NULL,
+  background INTEGER NOT NULL,
+  efficiency TEXT NOT NULL,
+  PRIMARY KEY (survey_id, spot)
+);
+
+CREATE INDEX survey_by_day ON survey(ran_at);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -256,6 +284,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(8, "dispensing", DISPENSING),
     Migration(9, "instruments", INSTRUMENTS),
     Migration(10, "assay on the dose", ASSAY_ON_THE_DOSE),
+    Migration(11, "surveys", SURVEYS),
 )
 
 
