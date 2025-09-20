@@ -273,6 +273,31 @@ CREATE INDEX survey_by_day ON survey(ran_at);
 """
 
 
+SHIPPING = """
+CREATE TABLE shipment (
+  id           TEXT PRIMARY KEY,
+  customer_id  TEXT NOT NULL REFERENCES customer(id),
+  packed_at    TEXT NOT NULL,
+  packed_by    TEXT NOT NULL,
+  symbol       TEXT NOT NULL,
+  activity     TEXT NOT NULL,
+  surface_mrem TEXT NOT NULL,
+  metre_mrem   TEXT NOT NULL,
+  delivered_at TEXT,
+  received_by  TEXT
+);
+
+CREATE TABLE shipment_dose (
+  shipment_id TEXT NOT NULL REFERENCES shipment(id) ON DELETE CASCADE,
+  dose_id     TEXT NOT NULL REFERENCES dose(id),
+  PRIMARY KEY (shipment_id, dose_id)
+);
+
+CREATE UNIQUE INDEX shipment_dose_once ON shipment_dose(dose_id);
+CREATE INDEX shipment_by_customer ON shipment(customer_id, packed_at);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -285,6 +310,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(9, "instruments", INSTRUMENTS),
     Migration(10, "assay on the dose", ASSAY_ON_THE_DOSE),
     Migration(11, "surveys", SURVEYS),
+    Migration(12, "shipping", SHIPPING),
 )
 
 
