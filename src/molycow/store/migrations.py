@@ -298,6 +298,42 @@ CREATE INDEX shipment_by_customer ON shipment(customer_id, packed_at);
 """
 
 
+COURIER_RUNS = """
+CREATE TABLE route (
+  id         TEXT PRIMARY KEY,
+  name       TEXT NOT NULL UNIQUE,
+  zone       TEXT NOT NULL,
+  leaves_at  TEXT NOT NULL
+);
+
+CREATE TABLE route_stop (
+  route_id    TEXT NOT NULL REFERENCES route(id) ON DELETE CASCADE,
+  position    INTEGER NOT NULL,
+  customer_id TEXT NOT NULL REFERENCES customer(id),
+  PRIMARY KEY (route_id, position)
+);
+
+CREATE TABLE route_run (
+  route_id    TEXT NOT NULL REFERENCES route(id),
+  day         TEXT NOT NULL,
+  driver      TEXT NOT NULL,
+  left_at     TEXT,
+  returned_at TEXT,
+  PRIMARY KEY (route_id, day)
+);
+
+CREATE TABLE run_shipment (
+  route_id    TEXT NOT NULL,
+  day         TEXT NOT NULL,
+  shipment_id TEXT NOT NULL REFERENCES shipment(id),
+  PRIMARY KEY (route_id, day, shipment_id),
+  FOREIGN KEY (route_id, day) REFERENCES route_run(route_id, day)
+);
+
+CREATE UNIQUE INDEX run_shipment_once ON run_shipment(shipment_id);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -311,6 +347,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(10, "assay on the dose", ASSAY_ON_THE_DOSE),
     Migration(11, "surveys", SURVEYS),
     Migration(12, "shipping", SHIPPING),
+    Migration(13, "courier runs", COURIER_RUNS),
 )
 
 
