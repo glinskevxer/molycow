@@ -334,6 +334,30 @@ CREATE UNIQUE INDEX run_shipment_once ON run_shipment(shipment_id);
 """
 
 
+DECAY_IN_STORAGE = """
+CREATE TABLE container (
+  id          TEXT PRIMARY KEY,
+  kind        TEXT NOT NULL,
+  opened_at   TEXT NOT NULL,
+  closed_at   TEXT,
+  disposed_at TEXT,
+  disposed_by TEXT,
+  survey_mrem TEXT
+);
+
+CREATE TABLE waste_item (
+  container_id TEXT NOT NULL REFERENCES container(id) ON DELETE CASCADE,
+  symbol       TEXT NOT NULL,
+  activity     TEXT NOT NULL,
+  added_at     TEXT NOT NULL,
+  source       TEXT NOT NULL,
+  PRIMARY KEY (container_id, source, added_at)
+);
+
+CREATE INDEX container_by_state ON container(disposed_at, closed_at);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -348,6 +372,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(11, "surveys", SURVEYS),
     Migration(12, "shipping", SHIPPING),
     Migration(13, "courier runs", COURIER_RUNS),
+    Migration(14, "decay in storage", DECAY_IN_STORAGE),
 )
 
 
