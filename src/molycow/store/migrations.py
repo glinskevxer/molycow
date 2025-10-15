@@ -358,6 +358,26 @@ CREATE INDEX container_by_state ON container(disposed_at, closed_at);
 """
 
 
+POSSESSION_LIMITS = """
+CREATE TABLE possession_limit (
+  symbol TEXT PRIMARY KEY,
+  curies TEXT NOT NULL,
+  note   TEXT NOT NULL
+);
+
+INSERT INTO possession_limit (symbol, curies, note) VALUES
+  ('Mo-99', '20', 'generators on the bench'),
+  ('Tc-99m', '20', 'eluate, batches and drawn doses'),
+  ('I-131', '5', 'therapy capsules and solution'),
+  ('Tl-201', '2', 'delivered unit doses'),
+  ('In-111', '1', 'delivered unit doses'),
+  ('I-123', '2', 'delivered unit doses'),
+  ('Ga-67', '1', 'delivered unit doses'),
+  ('Lu-177', '2', 'therapy doses'),
+  ('F-18', '5', 'delivered unit doses');
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -373,6 +393,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(12, "shipping", SHIPPING),
     Migration(13, "courier runs", COURIER_RUNS),
     Migration(14, "decay in storage", DECAY_IN_STORAGE),
+    Migration(15, "possession limits", POSSESSION_LIMITS),
 )
 
 

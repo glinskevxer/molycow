@@ -105,6 +105,11 @@ class Activity:
         )
 
     @property
+    def ci_value(self) -> Decimal:
+        """The activity in curies, for the places that are written in curies."""
+        return (self.uci / Decimal(1000000)).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+
+    @property
     def bq(self) -> Decimal:
         return self.uci * BQ_PER_UCI
 
