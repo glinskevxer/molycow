@@ -18,6 +18,9 @@ dev = [
   "mypy==1.14.1",
 ]
 
+[project.scripts]
+molycow = "molycow.cli.main:main"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/molycow"]
 
