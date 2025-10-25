@@ -8,6 +8,7 @@ from pathlib import Path
 import click
 
 from molycow import __version__
+from molycow.cli.register import customer, physician
 from molycow.cli.session import Session
 from molycow.clock import DEFAULT_ZONE
 from molycow.errors import MolycowError
@@ -100,6 +101,10 @@ def book_counts(session: Session) -> None:
         counts = [(name, int(opened.value(f"SELECT count(*) FROM {name}") or 0)) for name in tables]
         for name, count in sorted(counts, key=lambda pair: (-pair[1], pair[0])):
             click.echo(f"{count:6d}  {name}")
+
+
+run.add_command(customer)
+run.add_command(physician)
 
 
 def main() -> int:
