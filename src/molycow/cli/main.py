@@ -9,6 +9,7 @@ import click
 
 from molycow import __version__
 from molycow.cli.generator import generator
+from molycow.cli.kit import kit
 from molycow.cli.register import customer, physician
 from molycow.cli.session import Session
 from molycow.clock import DEFAULT_ZONE
@@ -106,6 +107,7 @@ def book_counts(session: Session) -> None:
 
 run.add_command(customer)
 run.add_command(generator)
+run.add_command(kit)
 run.add_command(physician)
 
 
