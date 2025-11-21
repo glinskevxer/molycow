@@ -149,6 +149,10 @@ class Activity:
     def __str__(self) -> str:
         return self.format()
 
+    def __format__(self, spec: str) -> str:
+        """Let an activity be padded in an f-string like the text it prints as."""
+        return format(str(self), spec)
+
 
 @dataclass(frozen=True, order=True)
 class Volume:
@@ -203,6 +207,9 @@ class Volume:
 
     def __str__(self) -> str:
         return f"{self.ml} mL"
+
+    def __format__(self, spec: str) -> str:
+        return format(str(self), spec)
 
 
 @dataclass(frozen=True)

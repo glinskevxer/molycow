@@ -64,3 +64,7 @@ def test_a_concentration_cannot_be_empty() -> None:
 def test_a_vial_that_is_all_saline_reads_as_zero_activity() -> None:
     conc = Concentration.of(Activity.of(1, "uci"), Volume.of(10))
     assert conc.activity_in(Volume.of("0.001")).is_zero()
+
+
+def test_a_volume_pads_in_an_f_string() -> None:
+    assert f"{Volume.of('0.55'):>9}" == " 0.550 mL"

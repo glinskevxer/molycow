@@ -91,9 +91,20 @@ def test_a_dose_is_signed() -> None:
 
 
 def test_the_label_carries_the_order_activity_and_the_clock_time() -> None:
-    assert a_dose().label(Activity.of(22, "mci")) == (
+    from molycow.clock import zone
+
+    assert a_dose().label(Activity.of(22, "mci"), zone()) == (
         "DS-250408-14 Tc-99m medronate 22.0 mCi at 0900"
     )
+
+
+def test_the_label_is_in_local_time_even_after_a_round_trip() -> None:
+    import datetime as dt
+
+    from molycow.clock import zone
+
+    stored = a_dose(calibration_at=CALIBRATION.astimezone(dt.UTC))
+    assert stored.label(Activity.of(22, "mci"), zone()).endswith("at 0900")
 
 
 def test_the_ids_have_to_be_the_right_kinds() -> None:

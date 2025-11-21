@@ -13,6 +13,7 @@ from __future__ import annotations
 import datetime as dt
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
+from zoneinfo import ZoneInfo
 
 from molycow.decay import decay_between
 from molycow.errors import ValidationError
@@ -96,9 +97,15 @@ class Dose:
 
         return hours_between(self.drawn_at, self.calibration_at)
 
-    def label(self, ordered: Activity) -> str:
-        """The line that goes on the syringe shield."""
-        clock = self.calibration_at.strftime("%H%M")
+    def label(self, ordered: Activity, tz: ZoneInfo) -> str:
+        """The line that goes on the syringe shield.
+
+        The clock time is local, and the zone has to be passed in. A dose read
+        back out of the book carries its calibration time in utc, so a label
+        built off the stored moment alone comes out hours wrong and looks
+        perfectly reasonable while it does it.
+        """
+        clock = self.calibration_at.astimezone(tz).strftime("%H%M")
         return (
             f"{self.id} {self.formula.nuclide} {self.formula.name} "
             f"{ordered.format('mci', 1)} at {clock}"

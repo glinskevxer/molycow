@@ -102,3 +102,7 @@ def test_a_word_where_a_number_belongs_is_refused() -> None:
         Activity.of("plenty", "mci")
     with pytest.raises(ValidationError, match="not a number"):
         Activity.of(None, "mci")
+
+
+def test_an_activity_pads_in_an_f_string() -> None:
+    assert f"{Activity.of(22, 'mci'):>12}" == "  22.000 mCi"
