@@ -14,6 +14,7 @@ from molycow.cli.kit import kit
 from molycow.cli.order import order
 from molycow.cli.register import customer, physician
 from molycow.cli.session import Session
+from molycow.cli.ship import ship
 from molycow.clock import DEFAULT_ZONE
 from molycow.errors import MolycowError
 from molycow.store.migrations import apply, latest, pending, schema_version
@@ -112,6 +113,7 @@ run.add_command(generator)
 run.add_command(kit)
 run.add_command(order)
 run.add_command(dose)
+run.add_command(ship)
 run.add_command(physician)
 
 
