@@ -13,6 +13,7 @@ from molycow.cli.generator import generator
 from molycow.cli.kit import kit
 from molycow.cli.order import order
 from molycow.cli.register import customer, physician
+from molycow.cli.route import route
 from molycow.cli.session import Session
 from molycow.cli.ship import ship
 from molycow.clock import DEFAULT_ZONE
@@ -114,6 +115,7 @@ run.add_command(kit)
 run.add_command(order)
 run.add_command(dose)
 run.add_command(ship)
+run.add_command(route)
 run.add_command(physician)
 
 
