@@ -10,6 +10,7 @@ import click
 from molycow import __version__
 from molycow.cli.dose import dose
 from molycow.cli.generator import generator
+from molycow.cli.instrument import instrument
 from molycow.cli.kit import kit
 from molycow.cli.order import order
 from molycow.cli.register import customer, physician
@@ -116,6 +117,7 @@ run.add_command(order)
 run.add_command(dose)
 run.add_command(ship)
 run.add_command(route)
+run.add_command(instrument)
 run.add_command(physician)
 
 
