@@ -18,6 +18,7 @@ from molycow.cli.route import route
 from molycow.cli.session import Session
 from molycow.cli.ship import ship
 from molycow.cli.survey import survey
+from molycow.cli.waste import waste
 from molycow.clock import DEFAULT_ZONE
 from molycow.errors import MolycowError
 from molycow.store.migrations import apply, latest, pending, schema_version
@@ -120,6 +121,7 @@ run.add_command(ship)
 run.add_command(route)
 run.add_command(instrument)
 run.add_command(survey)
+run.add_command(waste)
 run.add_command(physician)
 
 
