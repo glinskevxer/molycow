@@ -14,6 +14,7 @@ from molycow.cli.instrument import instrument
 from molycow.cli.kit import kit
 from molycow.cli.order import order
 from molycow.cli.register import customer, physician
+from molycow.cli.report import report
 from molycow.cli.route import route
 from molycow.cli.session import Session
 from molycow.cli.ship import ship
@@ -122,6 +123,7 @@ run.add_command(route)
 run.add_command(instrument)
 run.add_command(survey)
 run.add_command(waste)
+run.add_command(report)
 run.add_command(physician)
 
 
