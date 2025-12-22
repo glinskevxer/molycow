@@ -63,6 +63,7 @@ class Formula:
         return self.dose_low <= activity <= self.dose_high
 
     def check_dose(self, activity: Activity) -> None:
+        """Refuse an activity that is not an adult dose of this product."""
         if not self.dose_fits(activity):
             raise ValidationError(
                 "that is not an adult dose of this product",
@@ -223,14 +224,17 @@ def formula(code: str) -> Formula:
 
 
 def known() -> tuple[Formula, ...]:
+    """Every monograph, in the order the manual lists them."""
     return _TABLE
 
 
 def codes() -> tuple[str, ...]:
+    """The codes on the kit boxes."""
     return tuple(one.code for one in _TABLE)
 
 
 def is_known(code: str) -> bool:
+    """Whether this pharmacy compounds that kit."""
     return code.strip().upper() in _BY_CODE
 
 

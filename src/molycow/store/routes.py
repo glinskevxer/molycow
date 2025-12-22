@@ -50,6 +50,7 @@ class RouteRepository:
         )
 
     def get(self, route_id: str) -> Route:
+        """One route, or a refusal if it is not in the book."""
         found = self.find(route_id)
         if found is None:
             raise NotFoundError("no such route", id=route_id)
@@ -108,6 +109,7 @@ class RunRepository:
         )
 
     def get(self, route_id: str, day: dt.date) -> Run:
+        """One run, or a refusal if it is not in the book."""
         found = self.find(route_id, day)
         if found is None:
             raise NotFoundError("no such run", route=route_id, day=day.isoformat())

@@ -25,6 +25,7 @@ from molycow.store.rows import (
 
 
 def instrument_from(row: sqlite3.Row) -> Instrument:
+    """Build a instrument out of a row of the table."""
     return Instrument(
         id=text_in(row, "id"),
         kind=InstrumentKind(text_in(row, "kind")),
@@ -38,6 +39,7 @@ def instrument_from(row: sqlite3.Row) -> Instrument:
 
 
 def source_from(row: sqlite3.Row) -> CheckSource:
+    """Build a source out of a row of the table."""
     return CheckSource(
         serial=text_in(row, "serial"),
         symbol=text_in(row, "symbol"),
@@ -48,6 +50,7 @@ def source_from(row: sqlite3.Row) -> CheckSource:
 
 
 def check_from(row: sqlite3.Row) -> QcCheck:
+    """Build a check out of a row of the table."""
     return QcCheck(
         instrument_id=text_in(row, "instrument_id"),
         kind=CheckKind(text_in(row, "kind")),
@@ -90,6 +93,7 @@ class InstrumentRepository:
         return None if row is None else instrument_from(row)
 
     def get(self, instrument_id: str) -> Instrument:
+        """One instrument, or a refusal if it is not in the book."""
         found = self.find(instrument_id)
         if found is None:
             raise NotFoundError("no such instrument", id=instrument_id)
@@ -154,6 +158,7 @@ class CheckSourceRepository:
         return None if row is None else source_from(row)
 
     def get(self, serial: str) -> CheckSource:
+        """One check source, or a refusal if it is not in the book."""
         found = self.find(serial)
         if found is None:
             raise NotFoundError("no such check source", serial=serial)
@@ -236,6 +241,7 @@ class QcRepository:
         return run_id
 
     def get_run(self, run_id: int) -> LinearityRun:
+        """One linearity run and its readings, or a refusal."""
         row = self._book.one("SELECT * FROM linearity_run WHERE id = ?", (run_id,))
         if row is None:
             raise NotFoundError("no such linearity run", run=run_id)

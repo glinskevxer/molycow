@@ -88,11 +88,13 @@ class Run:
         return self.returned_at is not None
 
     def leaving(self, at: dt.datetime) -> Run:
+        """The run with a departure on it, which only happens once."""
         if self.has_left:
             raise ValidationError("that run has already left", route=self.route_id)
         return Run(self.route_id, self.day, self.driver, at, None)
 
     def back(self, at: dt.datetime) -> Run:
+        """The run with a return on it, once it has actually left."""
         if not self.has_left:
             raise ValidationError("that run has not left yet", route=self.route_id)
         if self.is_back:

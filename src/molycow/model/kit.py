@@ -105,6 +105,7 @@ class Batch:
         return Concentration.of(self.activity, self.volume)
 
     def activity_at(self, moment: dt.datetime) -> Activity:
+        """What the vial holds at a moment, decayed from the prep."""
         if moment < self.made_at:
             raise ValidationError(
                 "a batch has no activity before it was made",

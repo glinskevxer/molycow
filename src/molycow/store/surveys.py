@@ -84,6 +84,7 @@ class SurveyRepository:
         )
 
     def get(self, survey_id: str) -> Survey:
+        """One survey, or a refusal if it is not in the book."""
         found = self.find(survey_id)
         if found is None:
             raise NotFoundError("no such survey", id=survey_id)

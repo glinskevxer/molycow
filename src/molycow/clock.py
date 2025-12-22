@@ -104,6 +104,7 @@ def hours_between(earlier: dt.datetime, later: dt.datetime) -> Decimal:
 
 
 def minutes_between(earlier: dt.datetime, later: dt.datetime) -> Decimal:
+    """Elapsed minutes, signed, for the short intervals on the bench."""
     return Decimal(str(elapsed(earlier, later).total_seconds())) / Decimal(60)
 
 

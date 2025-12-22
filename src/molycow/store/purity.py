@@ -11,6 +11,7 @@ from molycow.store.rows import moment_in, moment_out, text_in
 
 
 def purity_from(row: sqlite3.Row) -> PurityTest:
+    """Build a purity out of a row of the table."""
     return PurityTest(
         batch_id=text_in(row, "batch_id"),
         tested_at=moment_in(row["tested_at"], "tested_at"),
@@ -63,6 +64,7 @@ class PurityRepository:
         return None if row is None else purity_from(row)
 
     def get(self, batch_id: str) -> PurityTest:
+        """One purity reading, or a refusal if it is not in the book."""
         found = self.find(batch_id)
         if found is None:
             raise NotFoundError("that batch has no purity reading", batch=batch_id)

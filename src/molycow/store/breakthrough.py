@@ -19,6 +19,7 @@ from molycow.store.rows import (
 
 
 def breakthrough_from(row: sqlite3.Row) -> Breakthrough:
+    """Build a breakthrough out of a row of the table."""
     return Breakthrough(
         elution_id=text_in(row, "elution_id"),
         tested_at=moment_in(row["tested_at"], "tested_at"),
@@ -58,6 +59,7 @@ class BreakthroughRepository:
         return None if row is None else breakthrough_from(row)
 
     def get(self, elution_id: str) -> Breakthrough:
+        """One breakthrough test, or a refusal if it is not in the book."""
         found = self.find(elution_id)
         if found is None:
             raise NotFoundError("that eluate has not been tested", elution=elution_id)

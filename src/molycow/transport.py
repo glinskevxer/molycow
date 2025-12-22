@@ -76,6 +76,7 @@ def a2_fraction(symbol: str, activity: Activity) -> Decimal:
 
 
 def fits_type_a(symbol: str, activity: Activity) -> bool:
+    """Whether a Type A package may hold that much of a nuclide."""
     return a2_fraction(symbol, activity) <= Decimal(1)
 
 

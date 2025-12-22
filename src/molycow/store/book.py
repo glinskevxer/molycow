@@ -72,6 +72,7 @@ class Book:
             raise MolycowError(f"the book would not take that: {exc}") from None
 
     def execute_many(self, sql: str, rows: Sequence[Params]) -> None:
+        """Run one statement over many rows of parameters."""
         self._require_open()
         try:
             self._connection.executemany(sql, rows)

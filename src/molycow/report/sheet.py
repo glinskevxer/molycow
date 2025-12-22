@@ -41,6 +41,7 @@ class Sheet:
         return "\n".join(self.lines())
 
     def section(self, title: str) -> Section:
+        """One section by its title, or a key error."""
         for section in self.sections:
             if section.title == title:
                 return section

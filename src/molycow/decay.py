@@ -43,6 +43,7 @@ def factor_over(nuclide: Nuclide, hours: Decimal) -> Decimal:
 
 
 def factor_between(nuclide: Nuclide, frm: dt.datetime, to: dt.datetime) -> Decimal:
+    """The decay factor between two moments."""
     return factor_over(nuclide, hours_between(frm, to))
 
 

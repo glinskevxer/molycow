@@ -26,6 +26,7 @@ from molycow.store.rows import (
 
 
 def generator_from(row: sqlite3.Row) -> Generator:
+    """Build a generator out of a row of the table."""
     return Generator(
         id=text_in(row, "id"),
         serial=text_in(row, "serial"),
@@ -39,6 +40,7 @@ def generator_from(row: sqlite3.Row) -> Generator:
 
 
 def elution_from(row: sqlite3.Row) -> Elution:
+    """Build a elution out of a row of the table."""
     return Elution(
         id=text_in(row, "id"),
         generator_id=text_in(row, "generator_id"),
@@ -82,6 +84,7 @@ class GeneratorRepository:
         return None if row is None else generator_from(row)
 
     def get(self, generator_id: str) -> Generator:
+        """One column, or a refusal if it is not in the book."""
         found = self.find(generator_id)
         if found is None:
             raise NotFoundError("no such generator", id=generator_id)
@@ -149,6 +152,7 @@ class ElutionRepository:
         return None if row is None else elution_from(row)
 
     def get(self, elution_id: str) -> Elution:
+        """One elution, or a refusal if it is not in the book."""
         found = self.find(elution_id)
         if found is None:
             raise NotFoundError("no such elution", id=elution_id)

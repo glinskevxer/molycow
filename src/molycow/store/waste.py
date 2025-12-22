@@ -90,6 +90,7 @@ class ContainerRepository:
         )
 
     def get(self, container_id: str) -> Container:
+        """One container, or a refusal if it is not in the book."""
         found = self.find(container_id)
         if found is None:
             raise NotFoundError("no such container", id=container_id)

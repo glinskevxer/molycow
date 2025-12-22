@@ -24,6 +24,7 @@ from molycow.store.rows import (
 
 
 def dose_from(row: sqlite3.Row) -> Dose:
+    """Build a dose out of a row of the table."""
     return Dose(
         id=text_in(row, "id"),
         order_id=text_in(row, "order_id"),
@@ -72,6 +73,7 @@ class DoseRepository:
         return None if row is None else dose_from(row)
 
     def get(self, dose_id: str) -> Dose:
+        """One dose, or a refusal if it is not in the book."""
         found = self.find(dose_id)
         if found is None:
             raise NotFoundError("no such dose", id=dose_id)

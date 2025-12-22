@@ -19,6 +19,7 @@ from molycow.store.rows import activity_in, activity_out, moment_in, moment_out,
 
 
 def order_from(row: sqlite3.Row) -> Order:
+    """Build a order out of a row of the table."""
     return Order(
         id=text_in(row, "id"),
         customer_id=text_in(row, "customer_id"),
@@ -67,6 +68,7 @@ class OrderRepository:
         return None if row is None else order_from(row)
 
     def get(self, order_id: str) -> Order:
+        """One order, or a refusal if it is not in the book."""
         found = self.find(order_id)
         if found is None:
             raise NotFoundError("no such order", id=order_id)

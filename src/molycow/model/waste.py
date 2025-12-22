@@ -134,6 +134,7 @@ class Container:
         return None
 
     def with_item(self, item: WasteItem) -> Container:
+        """The container with one more thing in it, if it is still open."""
         if self.is_closed:
             raise ValidationError("that container is closed", id=self.id)
         return Container(
@@ -146,6 +147,7 @@ class Container:
         )
 
     def closed(self, at: dt.datetime) -> Container:
+        """The container sealed, which an empty one does not get to be."""
         if self.is_closed:
             raise ValidationError("that container is already closed", id=self.id)
         if not self.items:

@@ -83,6 +83,7 @@ class Breakthrough:
         return self.moly.uci / self.technetium.mci
 
     def ratio_at(self, moment: dt.datetime) -> Decimal:
+        """The ratio at a later moment, refusing one before the test."""
         hours = hours_between(self.tested_at, moment)
         if hours < 0:
             raise ValidationError(

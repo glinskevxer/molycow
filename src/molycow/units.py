@@ -80,6 +80,7 @@ class Activity:
 
     @classmethod
     def of(cls, value: object, unit: str) -> Activity:
+        """Build one from a number and a unit."""
         folded = _fold_unit(unit)
         factor = _ACTIVITY_UNITS.get(folded)
         if factor is None:
@@ -127,17 +128,20 @@ class Activity:
         return Activity(self.uci - other.uci)
 
     def scaled(self, factor: object) -> Activity:
+        """The same quantity multiplied by a factor, refusing a negative one."""
         ratio = _as_decimal(factor, "factor")
         if ratio < 0:
             raise ValidationError("cannot scale activity by a negative factor", factor=str(ratio))
         return Activity(self.uci * ratio)
 
     def ratio_to(self, other: Activity) -> Decimal:
+        """This activity as a fraction of another one."""
         if other.is_zero():
             raise ValidationError("cannot take a ratio against zero activity")
         return self.uci / other.uci
 
     def format(self, unit: str = "mci", places: int = 3) -> str:
+        """Print in a unit, to a number of places."""
         folded = _fold_unit(unit)
         factor = _ACTIVITY_UNITS.get(folded)
         if factor is None:
@@ -175,6 +179,7 @@ class Volume:
 
     @classmethod
     def parse(cls, text: str) -> Volume:
+        """Read what somebody wrote on a worksheet."""
         match = _QUANTITY.match(text)
         if match is None:
             return cls.of(text.strip())
@@ -200,6 +205,7 @@ class Volume:
         return Volume(self.ml - other.ml)
 
     def scaled(self, factor: object) -> Volume:
+        """The same quantity multiplied by a factor, refusing a negative one."""
         ratio = _as_decimal(factor, "factor")
         if ratio < 0:
             raise ValidationError("cannot scale volume by a negative factor", factor=str(ratio))
@@ -224,6 +230,7 @@ class Concentration:
 
     @classmethod
     def of(cls, activity: Activity, volume: Volume) -> Concentration:
+        """Build one from a number and a unit."""
         if volume.is_zero():
             raise ValidationError("cannot take a concentration in zero volume")
         return cls(activity.uci / volume.ml)

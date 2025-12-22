@@ -12,6 +12,7 @@ from molycow.store.rows import date_in, date_out, maybe_date_in, maybe_text_in, 
 
 
 def customer_from(row: sqlite3.Row) -> Customer:
+    """Build a customer out of a row of the table."""
     return Customer(
         id=text_in(row, "id"),
         name=text_in(row, "name"),
@@ -57,12 +58,14 @@ class CustomerRepository:
         return None if row is None else customer_from(row)
 
     def get(self, customer_id: str) -> Customer:
+        """One customer, or a refusal if it is not in the book."""
         found = self.find(customer_id)
         if found is None:
             raise NotFoundError("no such customer", id=customer_id)
         return found
 
     def by_name(self, name: str) -> Customer:
+        """A customer by the name on their letterhead."""
         row = self._book.one("SELECT * FROM customer WHERE name = ?", (name,))
         if row is None:
             raise NotFoundError("no customer by that name", name=name)
@@ -154,6 +157,7 @@ class AuthorizedUserRepository:
         return None if row is None else self._user_from(row)
 
     def get(self, user_id: str) -> AuthorizedUser:
+        """One authorized user, or a refusal if it is not in the book."""
         found = self.find(user_id)
         if found is None:
             raise NotFoundError("no such authorized user", id=user_id)
@@ -193,6 +197,7 @@ class AuthorizedUserRepository:
         return ended
 
     def name_of(self, user_id: str) -> str:
+        """The name on a licence, without reading the whole record."""
         row = self._book.one("SELECT name FROM authorized_user WHERE id = ?", (user_id,))
         if row is None:
             raise NotFoundError("no such authorized user", id=user_id)

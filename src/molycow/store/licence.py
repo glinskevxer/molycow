@@ -26,6 +26,7 @@ class LicenceRepository:
         )
 
     def get(self, symbol: str) -> PossessionLimit:
+        """One possession limit, or a refusal if it is not in the book."""
         found = self.find(symbol)
         if found is None:
             raise NotFoundError("the licence does not name that nuclide", symbol=symbol)

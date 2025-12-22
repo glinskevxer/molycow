@@ -44,6 +44,7 @@ def check_licence(text: str) -> str:
 
 
 def check_zone(text: str) -> str:
+    """A delivery zone, folded, or a refusal."""
     cleaned = text.strip().lower()
     if cleaned not in ZONES:
         raise ValidationError("that is not a delivery zone", zone=text, zones=", ".join(ZONES))

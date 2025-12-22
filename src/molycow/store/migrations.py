@@ -415,6 +415,7 @@ def pending(book: Book) -> tuple[Migration, ...]:
 
 
 def is_current(book: Book) -> bool:
+    """Whether the book is at the version this build wants."""
     return schema_version(book) == latest()
 
 
@@ -450,4 +451,5 @@ def require_current(book: Book) -> None:
 
 
 def numbers() -> tuple[int, ...]:
+    """The step numbers, in order."""
     return tuple(step.number for step in MIGRATIONS)

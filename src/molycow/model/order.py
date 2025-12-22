@@ -100,6 +100,7 @@ class Order:
         return self.is_open() and at > self.calibration_at
 
     def with_state(self, state: OrderState) -> Order:
+        """The same order moved on, which only works once."""
         if self.state.is_final:
             raise ValidationError(
                 "that order has already been finished",

@@ -80,6 +80,7 @@ class ShipmentRepository:
         )
 
     def get(self, shipment_id: str) -> Shipment:
+        """One shipment, or a refusal if it is not in the book."""
         found = self.find(shipment_id)
         if found is None:
             raise NotFoundError("no such shipment", id=shipment_id)

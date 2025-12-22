@@ -98,6 +98,7 @@ def known() -> tuple[Nuclide, ...]:
 
 
 def for_use(use: Use) -> tuple[Nuclide, ...]:
+    """Every nuclide the table holds for one purpose."""
     return tuple(n for n in _TABLE if n.use is use)
 
 
@@ -108,4 +109,5 @@ def daughters_of(symbol: str) -> tuple[Nuclide, ...]:
 
 
 def is_known(symbol: str) -> bool:
+    """Whether this pharmacy handles that nuclide."""
     return fold_symbol(symbol) in _BY_KEY

@@ -28,6 +28,7 @@ from molycow.store.rows import (
 
 
 def kit_lot_from(row: sqlite3.Row) -> KitLot:
+    """Build a kit lot out of a row of the table."""
     return KitLot(
         id=text_in(row, "id"),
         code=text_in(row, "code"),
@@ -40,6 +41,7 @@ def kit_lot_from(row: sqlite3.Row) -> KitLot:
 
 
 def batch_from(row: sqlite3.Row) -> Batch:
+    """Build a batch out of a row of the table."""
     rcp = row["rcp"]
     return Batch(
         id=text_in(row, "id"),
@@ -84,6 +86,7 @@ class KitLotRepository:
         return None if row is None else kit_lot_from(row)
 
     def get(self, lot_id: str) -> KitLot:
+        """One kit lot, or a refusal if it is not in the book."""
         found = self.find(lot_id)
         if found is None:
             raise NotFoundError("no such kit lot", id=lot_id)
@@ -150,6 +153,7 @@ class BatchRepository:
         return None if row is None else batch_from(row)
 
     def get(self, batch_id: str) -> Batch:
+        """One batch, or a refusal if it is not in the book."""
         found = self.find(batch_id)
         if found is None:
             raise NotFoundError("no such batch", id=batch_id)
