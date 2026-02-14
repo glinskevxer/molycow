@@ -148,3 +148,18 @@ def add_a_table_then_fail(book: Book) -> None:
     with book.atomic():
         book.script("CREATE TABLE late (id TEXT PRIMARY KEY);")
         book.execute("INSERT INTO child VALUES (?, ?)", ("X-9", "CU-0404"))
+
+
+def test_the_book_lists_its_own_tables(book: Book) -> None:
+    assert book.tables() == ["child", "parent"]
+
+
+def test_a_table_can_be_counted_by_name(book: Book) -> None:
+    book.execute("INSERT INTO parent VALUES (?, ?)", ("CU-0001", "Saint Brannon"))
+    assert book.row_count("parent") == 1
+    assert book.row_count("child") == 0
+
+
+def test_a_table_that_is_not_in_the_book_cannot_be_counted(book: Book) -> None:
+    with pytest.raises(ValidationError, match="no such table"):
+        book.row_count("parent; DROP TABLE child")

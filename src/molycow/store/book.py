@@ -120,6 +120,22 @@ class Book:
         self._connection.execute(f"RELEASE {name}")
         self._savepoints -= 1
 
+    def tables(self) -> list[str]:
+        """Every table in the book, leaving sqlite's own out of it."""
+        rows = self.all("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
+        return [str(row["name"]) for row in rows if not str(row["name"]).startswith("sqlite_")]
+
+    def row_count(self, table: str) -> int:
+        """How many rows one table holds.
+
+        The name is checked against the tables the book actually has rather
+        than interpolated, because a table name cannot be a bound parameter and
+        a caller who can name a table can otherwise name anything.
+        """
+        if table not in self.tables():
+            raise ValidationError("there is no such table in this book", table=table)
+        return int(self.value(f"SELECT count(*) FROM {table}") or 0)
+
     def close(self) -> None:
         if not self._closed:
             self._connection.close()

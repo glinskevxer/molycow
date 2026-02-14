@@ -101,14 +101,7 @@ def book_check(session: Session) -> None:
 def book_counts(session: Session) -> None:
     """Count the rows in every table, largest first."""
     with session.open() as opened:
-        tables = [
-            str(row["name"])
-            for row in opened.all(
-                "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name"
-            )
-            if not str(row["name"]).startswith("sqlite_")
-        ]
-        counts = [(name, int(opened.value(f"SELECT count(*) FROM {name}") or 0)) for name in tables]
+        counts = [(name, opened.row_count(name)) for name in opened.tables()]
         for name, count in sorted(counts, key=lambda pair: (-pair[1], pair[0])):
             click.echo(f"{count:6d}  {name}")
 
