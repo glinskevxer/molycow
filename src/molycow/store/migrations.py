@@ -378,6 +378,16 @@ INSERT INTO possession_limit (symbol, curies, note) VALUES
 """
 
 
+KEYS_INDEXED = """
+CREATE INDEX batch_by_kit_lot ON batch(kit_lot_id);
+CREATE INDEX customer_order_by_user ON customer_order(user_id);
+CREATE INDEX dose_by_calibrator ON dose(calibrator_id);
+CREATE INDEX linearity_run_by_instrument ON linearity_run(instrument_id);
+CREATE INDEX qc_check_by_source ON qc_check(source_serial);
+CREATE INDEX route_stop_by_customer ON route_stop(customer_id);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -394,6 +404,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(13, "courier runs", COURIER_RUNS),
     Migration(14, "decay in storage", DECAY_IN_STORAGE),
     Migration(15, "possession limits", POSSESSION_LIMITS),
+    Migration(16, "keys indexed", KEYS_INDEXED),
 )
 
 
