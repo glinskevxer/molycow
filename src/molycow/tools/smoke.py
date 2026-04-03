@@ -248,7 +248,7 @@ STEPS: tuple[tuple[str, ...], ...] = (
     ("report", "day", "--on", "2025-04-08"),
 )
 
-EXPECTED = (
+EXPECTED: tuple[str, ...] = (
     "DS-250408-01",
     "SH-250408-01",
     "hot lab day sheet 2025-04-08",

@@ -39,3 +39,30 @@ def test_the_run_stops_at_the_first_refusal(tmp_path: Path) -> None:
 def test_the_things_it_looks_for_are_the_ones_that_matter() -> None:
     assert "DS-250408-01" in smoke.EXPECTED
     assert "hot lab day sheet 2025-04-08" in smoke.EXPECTED
+
+
+def test_the_run_prints_what_it_did_unless_it_is_told_not_to(
+    tmp_path: Path, capsys: object
+) -> None:
+    smoke.drive(tmp_path / "loud.sqlite3", quiet=False)
+    printed = capsys.readouterr().out  # type: ignore[attr-defined]
+    assert "$ molycow book init" in printed
+    assert "DS-250408-01" in printed
+
+
+def test_a_run_that_prints_nothing_expected_fails(tmp_path: Path) -> None:
+    original = smoke.EXPECTED
+    smoke.EXPECTED = ("something nobody prints",)
+    try:
+        assert smoke.main(["--quiet"]) == 1
+    finally:
+        smoke.EXPECTED = original
+
+
+def test_a_broken_step_fails_the_run() -> None:
+    original = smoke.STEPS
+    smoke.STEPS = (("book", "init"), ("customer", "list", "--zone", "nowhere"))
+    try:
+        assert smoke.main(["--quiet"]) == 1
+    finally:
+        smoke.STEPS = original
