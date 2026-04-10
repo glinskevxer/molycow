@@ -1,0 +1,202 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]" -c constraints.txt
+      - run: python -m ruff check .
+      - run: python -m ruff format --check .
+      - run: python -m mypy
+
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]" -c constraints.txt
+      - run: python -m molycow.tools.check_docstrings
+      - run: python -m molycow.tools.check_layers
+      - run: python -m molycow.tools.check_wiring
+      - run: python -m molycow.tools.check_tests
+      - run: python -m molycow.tools.check_sql
+      - run: python -m molycow.tools.check_indexes
+      - run: python -m molycow.tools.check_migrations
+      - run: python -m molycow.tools.check_readme
+      - run: python -m molycow.tools.schema_dump --check
+      - run: python -m molycow.tools.build_glossary --check
+      - run: python -m molycow.tools.release_check
+
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]" -c constraints.txt
+      - run: python -m pytest -q
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]" -c constraints.txt
+      - run: python -m pytest -q --cov --cov-report=json --cov-report=term-missing
+      - run: python -m molycow.tools.coverage_gate --floor 95 --file-floor 80 --worst 6
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage.json
+
+  installed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install .
+      - run: molycow --version
+      - run: python -m molycow.tools.smoke
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip build
+      - run: python -m build
+      - run: python -m pip install dist/*.whl
+      - run: python -c "import molycow; print(molycow.__version__)"
+      - run: python -m molycow.tools.smoke --quiet
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+  walk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install .
+      - name: run a morning through the console script
+        run: |
+          set -euo pipefail
+          book=/tmp/walk.sqlite3
+          rm -f "$book"
+          molycow --book "$book" book init
+          molycow --book "$book" customer add "Saint Brannon Medical Centre" \
+            --kind hospital --licence 42-28931-01 --street "1400 Weir Street" \
+            --town Ardmore --zone north --opened 2025-01-06
+          molycow --book "$book" physician add CU-0001 "R. Okonkwo" \
+            --licence 42-28931-01 --nuclide Tc-99m --added 2025-01-06
+          molycow --book "$book" order take CU-0001 AU-0001 --code MDP \
+            --procedure "whole body bone" --ref A-4471902 --activity "22 mCi" \
+            --calibration "2025-04-08 09:00" --at "2025-04-07 16:10"
+          molycow --book "$book" instrument add 551-40922 --kind "dose calibrator" \
+            --maker Vernay --model CRC-55tR --installed 2023-06-12 --calibrated 2025-02-03
+          molycow --book "$book" instrument source CS-9912 --nuclide Cs-137 \
+            --activity "200 uCi" --certified 2019-07-01
+          molycow --book "$book" instrument check IC-0001 CS-9912 \
+            --at "2025-04-08 06:05" --read "175 uCi" --by "K. Ruzicka"
+          molycow --book "$book" instrument due IC-0001 --on 2025-04-08
+          molycow --book "$book" generator receive M99-44182 --maker "Corren Isotopes" \
+            --activity "2 Ci" --calibrated "2025-04-05 12:00" \
+            --received 2025-04-05 --expires 2025-04-19
+          molycow --book "$book" generator expect GEN-0001 --at "2025-04-08 06:30"
+          molycow --book "$book" generator milk GEN-0001 --at "2025-04-08 06:30" \
+            --volume "10 mL" --activity "940 mCi"
+          molycow --book "$book" generator test EL-250408-01 --at "2025-04-08 06:45" \
+            --moly "0.9 uCi" --aluminium 4 --by "K. Ruzicka"
+          molycow --book "$book" generator eluates --at "2025-04-08 07:00"
+          molycow --book "$book" kit formulary
+          molycow --book "$book" kit add MDP 9F4471 --maker "Sedgwick Radiochem" \
+            --received 2025-03-20 --expires 2026-03-31 --vials 30
+          molycow --book "$book" kit plan MDP EL-250408-01 --at "2025-04-08 07:15" \
+            --activity "300 mCi"
+          molycow --book "$book" kit compound MDP EL-250408-01 --at "2025-04-08 07:15" \
+            --activity "300 mCi" --by "K. Ruzicka"
+          molycow --book "$book" kit strips B-250408-01 --at "2025-04-08 07:35" \
+            --solvent 48200 1100 --saline 900 47600 --by "K. Ruzicka"
+          molycow --book "$book" kit bench --at "2025-04-08 08:00"
+          molycow --book "$book" dose plan ORD-250407-01 B-250408-01 --at "2025-04-08 07:40"
+          molycow --book "$book" dose draw ORD-250407-01 B-250408-01 \
+            --at "2025-04-08 07:40" --assay "25.65 mCi" --by "K. Ruzicka" --calibrator IC-0001
+          molycow --book "$book" dose list --on 2025-04-08
+          molycow --book "$book" ship ready CU-0001 --at "2025-04-08 08:20"
+          molycow --book "$book" ship pack CU-0001 DS-250408-01 --at "2025-04-08 08:20" \
+            --by "K. Ruzicka" --surface 12 --metre 0.35
+          molycow --book "$book" route add "north morning" --zone north --leaves 0630 \
+            --stop CU-0001
+          molycow --book "$book" route open RT-0001 --on 2025-04-08 --driver "J. Fennimore"
+          molycow --book "$book" route load RT-0001 SH-250408-01 --on 2025-04-08
+          molycow --book "$book" route depart RT-0001 --on 2025-04-08 --at "2025-04-08 08:40"
+          molycow --book "$book" route deliver RT-0001 SH-250408-01 --on 2025-04-08 \
+            --at "2025-04-08 09:05" --to Reception
+          molycow --book "$book" route back RT-0001 --on 2025-04-08 --at "2025-04-08 09:50"
+          molycow --book "$book" ship manifest --on 2025-04-08
+          molycow --book "$book" waste open --kind vials --at "2025-04-08 06:00"
+          molycow --book "$book" waste discard WC-0001 --nuclide Tc-99m \
+            --activity "40 mCi" --at "2025-04-08 16:00" --from EL-250408-01
+          molycow --book "$book" waste close WC-0001 --at "2025-04-08 17:00"
+          molycow --book "$book" waste store --at "2025-04-12 09:00"
+          molycow --book "$book" waste dispose WC-0001 --at "2025-04-12 09:00" \
+            --by "K. Ruzicka" --survey 0.01
+          molycow --book "$book" survey walk --at "2025-04-08 17:40" --by "K. Ruzicka" \
+            --read "hot lab" 1.2 --read "dispensing bench" 0.8 --read packaging 0.3 \
+            --read "waste store" 2.1 --wipe "hot lab" "draw station" 340 120
+          molycow --book "$book" survey day --on 2025-04-08
+          molycow --book "$book" report day --on 2025-04-08
+          molycow --book "$book" report holdings --at "2025-04-08 17:00" --place
+          molycow --book "$book" report licence
+          molycow --book "$book" book counts
+          molycow --book "$book" book check
