@@ -16,6 +16,7 @@ from molycow.clock import day_of, zone
 from molycow.errors import RuleError
 from molycow.formulary import formula
 from molycow.model.order import Order, OrderState
+from molycow.store.audit import AuditRepository
 from molycow.store.book import Book
 from molycow.store.orders import OrderRepository
 from molycow.store.register import AuthorizedUserRepository, CustomerRepository
@@ -39,6 +40,7 @@ class OrderService:
         self._orders = OrderRepository(book)
         self._customers = CustomerRepository(book)
         self._users = AuthorizedUserRepository(book)
+        self._audit = AuditRepository(book)
 
     def refusal_for(
         self,

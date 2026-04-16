@@ -31,6 +31,7 @@ from molycow.model.order import Order
 from molycow.nuclides import nuclide
 from molycow.service.purity import PurityService
 from molycow.service.qc import QcService
+from molycow.store.audit import AuditRepository
 from molycow.store.book import Book
 from molycow.store.doses import DoseRepository
 from molycow.store.kits import BatchRepository
@@ -64,6 +65,7 @@ class DispenseService:
         self._doses = DoseRepository(book)
         self._purity = PurityService(book)
         self._qc = QcService(book, self._tz)
+        self._audit = AuditRepository(book)
 
     def drawn_from(self, batch_id: str) -> Volume:
         taken = Volume.zero()
@@ -160,6 +162,13 @@ class DispenseService:
         with self._book.atomic():
             self._doses.add(dose)
             self._orders.save_state(planned.order.filled())
+            self._audit.record(
+                at,
+                drawn_by,
+                "drew",
+                dose.id,
+                f"{dose.volume} off {batch_id} on {calibrator_id}",
+            )
         return dose
 
     def for_order(self, order_id: str) -> Dose | None:

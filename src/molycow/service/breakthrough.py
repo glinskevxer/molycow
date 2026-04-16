@@ -14,6 +14,7 @@ from decimal import Decimal
 
 from molycow.errors import ReleaseError
 from molycow.model.breakthrough import Breakthrough
+from molycow.store.audit import AuditRepository
 from molycow.store.book import Book
 from molycow.store.breakthrough import BreakthroughRepository
 from molycow.store.generators import ElutionRepository
@@ -39,6 +40,7 @@ class BreakthroughService:
         self._book = book
         self._tests = BreakthroughRepository(book)
         self._elutions = ElutionRepository(book)
+        self._audit = AuditRepository(book)
 
     def test(
         self,
@@ -64,8 +66,16 @@ class BreakthroughService:
             aluminium_ppm=aluminium_ppm,
             tested_by=tested_by,
         )
+        failed = reading.failure()
         with self._book.atomic():
             self._tests.add(reading)
+            self._audit.record(
+                tested_at,
+                tested_by,
+                "tested",
+                elution_id,
+                failed or f"{reading.ratio:.4f} uCi/mCi",
+            )
         return reading
 
     def release(self, elution_id: str) -> Release:

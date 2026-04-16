@@ -1,6 +1,16 @@
 # schema
 
-Generated from the migrations. Schema version 16.
+Generated from the migrations. Schema version 17.
+
+## audit
+
+- `id` INTEGER (primary key)
+- `done_at` TEXT (not null)
+- `actor` TEXT (not null)
+- `action` TEXT (not null)
+- `subject` TEXT (not null)
+- `detail` TEXT (not null)
+- indexes: audit_by_day, audit_by_subject
 
 ## authorized_nuclide
 

@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 from molycow.clock import day_of, zone
 from molycow.errors import SafetyError, ValidationError
 from molycow.model.survey import WIPE_LIMIT_DPM, Area, DoseRate, Survey, Wipe
+from molycow.store.audit import AuditRepository
 from molycow.store.book import Book
 from molycow.store.surveys import SurveyRepository
 
@@ -42,6 +43,7 @@ class SurveyService:
         self._book = book
         self._tz = tz or zone()
         self._surveys = SurveyRepository(book)
+        self._audit = AuditRepository(book)
 
     def walk(
         self,
@@ -60,7 +62,15 @@ class SurveyService:
             readings=tuple(readings),
             wipes=tuple(wipes),
         )
-        self._surveys.add(survey)
+        with self._book.atomic():
+            self._surveys.add(survey)
+            self._audit.record(
+                at,
+                surveyed_by,
+                "surveyed",
+                survey.id,
+                survey.failure() or "clean",
+            )
         return survey
 
     def areas_missed(self, day: dt.date) -> list[Area]:

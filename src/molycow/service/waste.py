@@ -17,6 +17,7 @@ from molycow.clock import zone
 from molycow.errors import RuleError, SafetyError
 from molycow.formulary import formula
 from molycow.model.waste import Container, ContainerKind, WasteItem
+from molycow.store.audit import AuditRepository
 from molycow.store.book import Book
 from molycow.store.doses import DoseRepository
 from molycow.store.waste import ContainerRepository
@@ -44,6 +45,7 @@ class WasteService:
         self._tz = tz or zone()
         self._containers = ContainerRepository(book)
         self._doses = DoseRepository(book)
+        self._audit = AuditRepository(book)
 
     def open_container(self, kind: ContainerKind, at: dt.datetime) -> Container:
         container = Container(
@@ -110,7 +112,16 @@ class WasteService:
                 reading=str(survey_mrem),
                 background=str(BACKGROUND_MREM),
             )
-        return self._containers.dispose(container_id, at, disposed_by, survey_mrem)
+        with self._book.atomic():
+            gone = self._containers.dispose(container_id, at, disposed_by, survey_mrem)
+            self._audit.record(
+                at,
+                disposed_by,
+                "disposed",
+                container_id,
+                f"surveyed {survey_mrem} mrem/h",
+            )
+        return gone
 
     def ready(self, at: dt.datetime) -> list[Container]:
         """Containers whose hold has run out and which can be surveyed out."""

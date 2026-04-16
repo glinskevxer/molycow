@@ -14,6 +14,7 @@ from decimal import Decimal
 from molycow.errors import ReleaseError
 from molycow.model.kit import Batch
 from molycow.model.purity import PurityTest, Strip
+from molycow.store.audit import AuditRepository
 from molycow.store.book import Book
 from molycow.store.kits import BatchRepository
 from molycow.store.purity import PurityRepository
@@ -48,6 +49,7 @@ class PurityService:
         self._book = book
         self._tests = PurityRepository(book)
         self._batches = BatchRepository(book)
+        self._audit = AuditRepository(book)
 
     def run(
         self,
@@ -75,6 +77,13 @@ class PurityService:
         with self._book.atomic():
             self._tests.add(reading)
             tested = self._batches.record_purity(batch_id, reading.rcp)
+            self._audit.record(
+                tested_at,
+                tested_by,
+                "released" if tested.is_pure_enough else "held",
+                batch_id,
+                f"rcp {reading.rcp}%",
+            )
         return Reading(reading, tested, tested.is_pure_enough)
 
     def reading_for(self, batch_id: str) -> PurityTest:

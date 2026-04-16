@@ -17,6 +17,7 @@ from molycow.errors import NotFoundError, RuleError
 from molycow.formulary import Formula, formula
 from molycow.model.kit import Batch, KitLot
 from molycow.service.breakthrough import BreakthroughService
+from molycow.store.audit import AuditRepository
 from molycow.store.book import Book
 from molycow.store.generators import ElutionRepository
 from molycow.store.kits import BatchRepository, KitLotRepository
@@ -50,6 +51,7 @@ class CompoundService:
         self._lots = KitLotRepository(book)
         self._batches = BatchRepository(book)
         self._release = BreakthroughService(book)
+        self._audit = AuditRepository(book)
 
     def drawn_from(self, elution_id: str) -> Volume:
         """How much has already been taken out of an elution vial."""
@@ -139,6 +141,13 @@ class CompoundService:
         )
         with self._book.atomic():
             self._batches.add(batch)
+            self._audit.record(
+                at,
+                made_by,
+                "compounded",
+                batch.id,
+                f"{batch.activity.format('mci', 1)} of {batch.code} from {elution_id}",
+            )
         return batch
 
     def ready(self, at: dt.datetime, code: str | None = None) -> list[Batch]:

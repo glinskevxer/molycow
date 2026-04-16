@@ -17,6 +17,7 @@ from molycow.clock import day_of, zone
 from molycow.errors import RuleError
 from molycow.ingrowth import DAUGHTER
 from molycow.model.generator import Elution, Generator
+from molycow.store.audit import AuditRepository
 from molycow.store.book import Book
 from molycow.store.generators import ElutionRepository, GeneratorRepository
 from molycow.units import Activity, Volume
@@ -50,6 +51,7 @@ class ElutionService:
         self._tz = tz or zone()
         self._generators = GeneratorRepository(book)
         self._elutions = ElutionRepository(book)
+        self._audit = AuditRepository(book)
 
     def expected_from(self, generator_id: str, at: dt.datetime) -> Activity:
         """What the column should give up if it is milked now."""
@@ -67,6 +69,7 @@ class ElutionService:
         volume: Volume,
         activity: Activity,
         force: bool = False,
+        milked_by: str = "the hot lab",
     ) -> Milking:
         """Record an elution against a column."""
         column = self._generators.get(generator_id)
@@ -103,6 +106,13 @@ class ElutionService:
         note = self._read_yield(elution, force)
         with self._book.atomic():
             self._elutions.add(elution)
+            self._audit.record(
+                at,
+                milked_by,
+                "milked",
+                elution.id,
+                f"{elution.activity.format('mci', 1)} from {generator_id}",
+            )
         return Milking(elution, column, note)
 
     def _read_yield(self, elution: Elution, force: bool) -> str | None:

@@ -15,6 +15,7 @@ from molycow.clock import day_of, zone
 from molycow.errors import RuleError, SafetyError
 from molycow.model.instrument import Instrument
 from molycow.model.qc import CheckKind, LinearityPoint, LinearityRun, QcCheck
+from molycow.store.audit import AuditRepository
 from molycow.store.book import Book
 from molycow.store.instruments import (
     CheckSourceRepository,
@@ -48,6 +49,7 @@ class QcService:
         self._instruments = InstrumentRepository(book)
         self._sources = CheckSourceRepository(book)
         self._checks = QcRepository(book)
+        self._audit = AuditRepository(book)
 
     def run(
         self,
@@ -86,6 +88,7 @@ class QcService:
         )
         with self._book.atomic():
             self._checks.add(check)
+            self._audit.record(at, checked_by, "checked", instrument_id, check.note())
         return RunResult(check, instrument)
 
     def constancy(

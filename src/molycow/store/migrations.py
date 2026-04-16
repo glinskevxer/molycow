@@ -388,6 +388,21 @@ CREATE INDEX route_stop_by_customer ON route_stop(customer_id);
 """
 
 
+AUDIT_TRAIL = """
+CREATE TABLE audit (
+  id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  done_at TEXT NOT NULL,
+  actor   TEXT NOT NULL,
+  action  TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  detail  TEXT NOT NULL
+);
+
+CREATE INDEX audit_by_subject ON audit(subject, done_at);
+CREATE INDEX audit_by_day ON audit(done_at);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -405,6 +420,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(14, "decay in storage", DECAY_IN_STORAGE),
     Migration(15, "possession limits", POSSESSION_LIMITS),
     Migration(16, "keys indexed", KEYS_INDEXED),
+    Migration(17, "audit trail", AUDIT_TRAIL),
 )
 
 

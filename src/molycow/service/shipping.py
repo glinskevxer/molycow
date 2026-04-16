@@ -16,6 +16,7 @@ from molycow.clock import day_of, zone
 from molycow.errors import RuleError
 from molycow.formulary import formula
 from molycow.model.shipment import Shipment
+from molycow.store.audit import AuditRepository
 from molycow.store.book import Book
 from molycow.store.doses import DoseRepository
 from molycow.store.orders import OrderRepository
@@ -56,6 +57,7 @@ class ShippingService:
         self._doses = DoseRepository(book)
         self._orders = OrderRepository(book)
         self._customers = CustomerRepository(book)
+        self._audit = AuditRepository(book)
 
     def ready_for(self, customer_id: str, at: dt.datetime) -> list[str]:
         """Doses drawn for a customer that are not in a box yet."""
@@ -128,10 +130,22 @@ class ShippingService:
             surface_mrem=surface_mrem,
             metre_mrem=metre_mrem,
         )
-        return self._shipments.add(shipment)
+        with self._book.atomic():
+            self._shipments.add(shipment)
+            self._audit.record(
+                at,
+                packed_by,
+                "packed",
+                shipment.id,
+                f"{shipment.dose_count} doses for {customer_id}",
+            )
+        return shipment
 
     def deliver(self, shipment_id: str, at: dt.datetime, received_by: str) -> Shipment:
-        return self._shipments.sign_for(shipment_id, at, received_by)
+        with self._book.atomic():
+            signed = self._shipments.sign_for(shipment_id, at, received_by)
+            self._audit.record(at, received_by, "delivered", shipment_id, "signed for")
+        return signed
 
     def manifest(self, day: dt.date) -> Manifest:
         return Manifest(day, tuple(self._shipments.on_day(day, self._tz)))
