@@ -109,9 +109,16 @@ def generator_expect(session: Session, generator_id: str, moment: str) -> None:
 @click.option("--volume", required=True, help="what came off, as '10 mL'")
 @click.option("--activity", required=True, help="what the calibrator read")
 @click.option("--force", is_flag=True, help="accept a poor yield anyway")
+@click.option("--by", "milked_by", default="the hot lab", show_default=True)
 @click.pass_obj
 def generator_milk(
-    session: Session, generator_id: str, moment: str, volume: str, activity: str, force: bool
+    session: Session,
+    generator_id: str,
+    moment: str,
+    volume: str,
+    activity: str,
+    force: bool,
+    milked_by: str,
 ) -> None:
     """Milk a column and write the elution down."""
     with session.open() as book:
@@ -121,6 +128,7 @@ def generator_milk(
             Volume.parse(volume),
             Activity.parse(activity),
             force=force,
+            milked_by=milked_by,
         )
         click.echo(
             f"{milking.elution.id} {milking.elution.activity.format('mci', 1)} "

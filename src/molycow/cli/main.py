@@ -8,6 +8,7 @@ from pathlib import Path
 import click
 
 from molycow import __version__
+from molycow.cli.audit import audit
 from molycow.cli.dose import dose
 from molycow.cli.generator import generator
 from molycow.cli.instrument import instrument
@@ -117,6 +118,7 @@ run.add_command(instrument)
 run.add_command(survey)
 run.add_command(waste)
 run.add_command(report)
+run.add_command(audit)
 run.add_command(physician)
 
 
