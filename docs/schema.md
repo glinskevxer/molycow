@@ -1,6 +1,6 @@
 # schema
 
-Generated from the migrations. Schema version 17.
+Generated from the migrations. Schema version 18.
 
 ## audit
 
@@ -164,6 +164,8 @@ Generated from the migrations. Schema version 17.
 - `received_on` TEXT (not null)
 - `expires_on` TEXT (not null)
 - `vials` INTEGER (not null)
+- `recalled_at` TEXT
+- `recall_reason` TEXT
 - indexes: kit_lot_by_code
 
 ## linearity_point

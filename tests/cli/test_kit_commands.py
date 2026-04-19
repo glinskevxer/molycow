@@ -295,3 +295,110 @@ def test_an_empty_bench_says_so(runner: CliRunner, bookfile: Path) -> None:
         "nothing on the bench"
         in call(runner, bookfile, "kit", "bench", "--at", "2025-04-08 08:00").output
     )
+
+
+def test_a_lot_is_pulled_and_the_chain_printed(runner: CliRunner, bookfile: Path) -> None:
+    a_bench(runner, bookfile)
+    call(
+        runner,
+        bookfile,
+        "kit",
+        "compound",
+        "MDP",
+        "EL-250408-01",
+        "--at",
+        "2025-04-08 07:15",
+        "--activity",
+        "300 mCi",
+        "--by",
+        "K. Ruzicka",
+    )
+    result = call(
+        runner,
+        bookfile,
+        "kit",
+        "recall",
+        "KL-0001",
+        "--at",
+        "2025-04-10 09:00",
+        "--why",
+        "maker found particulates",
+        "--by",
+        "K. Ruzicka",
+    )
+    assert "KL-0001 MDP lot 9F4471" in result.output
+    assert "batch B-250408-01" in result.output
+
+
+def test_a_lot_that_touched_nothing_says_so(runner: CliRunner, bookfile: Path) -> None:
+    a_bench(runner, bookfile)
+    result = call(
+        runner,
+        bookfile,
+        "kit",
+        "recall",
+        "KL-0001",
+        "--at",
+        "2025-04-10 09:00",
+        "--why",
+        "maker found particulates",
+        "--by",
+        "K. Ruzicka",
+    )
+    assert "nothing was made from it" in result.output
+
+
+def test_the_recalled_list_is_empty_until_something_is_pulled(
+    runner: CliRunner, bookfile: Path
+) -> None:
+    a_bench(runner, bookfile)
+    assert "nothing has been recalled" in call(runner, bookfile, "kit", "recalled").output
+    call(
+        runner,
+        bookfile,
+        "kit",
+        "recall",
+        "KL-0001",
+        "--at",
+        "2025-04-10 09:00",
+        "--why",
+        "maker found particulates",
+        "--by",
+        "K. Ruzicka",
+    )
+    listed = call(runner, bookfile, "kit", "recalled")
+    assert "pulled 2025-04-10" in listed.output
+    assert "particulates" in listed.output
+
+
+def test_a_pulled_lot_cannot_be_compounded_from(runner: CliRunner, bookfile: Path) -> None:
+    a_bench(runner, bookfile)
+    call(
+        runner,
+        bookfile,
+        "kit",
+        "recall",
+        "KL-0001",
+        "--at",
+        "2025-04-08 07:00",
+        "--why",
+        "maker found particulates",
+        "--by",
+        "K. Ruzicka",
+    )
+    result = call(
+        runner,
+        bookfile,
+        "kit",
+        "compound",
+        "MDP",
+        "EL-250408-01",
+        "--at",
+        "2025-04-08 07:15",
+        "--activity",
+        "300 mCi",
+        "--by",
+        "K. Ruzicka",
+    )
+    assert result.exit_code != 0
+    assert "no kit of that sort" in str(result.exception)

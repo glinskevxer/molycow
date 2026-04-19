@@ -403,6 +403,13 @@ CREATE INDEX audit_by_day ON audit(done_at);
 """
 
 
+RECALLS = """
+ALTER TABLE kit_lot ADD COLUMN recalled_at TEXT;
+
+ALTER TABLE kit_lot ADD COLUMN recall_reason TEXT;
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -421,6 +428,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(15, "possession limits", POSSESSION_LIMITS),
     Migration(16, "keys indexed", KEYS_INDEXED),
     Migration(17, "audit trail", AUDIT_TRAIL),
+    Migration(18, "recalls", RECALLS),
 )
 
 

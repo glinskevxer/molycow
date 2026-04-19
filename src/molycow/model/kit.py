@@ -30,6 +30,8 @@ class KitLot:
     received_on: dt.date
     expires_on: dt.date
     vials: int
+    recalled_at: dt.datetime | None = None
+    recall_reason: str | None = None
 
     def __post_init__(self) -> None:
         expect(self.id, Kind.KIT_LOT)
@@ -45,8 +47,32 @@ class KitLot:
     def formula(self) -> Formula:
         return formula(self.code)
 
+    @property
+    def is_recalled(self) -> bool:
+        return self.recalled_at is not None
+
     def is_in_date(self, day: dt.date) -> bool:
+        if self.is_recalled:
+            return False
         return self.received_on <= day <= self.expires_on
+
+    def recalled(self, at: dt.datetime, reason: str) -> KitLot:
+        """The same lot pulled off the shelf, which only happens once."""
+        if self.is_recalled:
+            raise ValidationError("that lot has already been recalled", id=self.id)
+        if not reason.strip():
+            raise ValidationError("a recall says why", id=self.id)
+        return KitLot(
+            id=self.id,
+            code=self.code,
+            maker=self.maker,
+            lot=self.lot,
+            received_on=self.received_on,
+            expires_on=self.expires_on,
+            vials=self.vials,
+            recalled_at=at,
+            recall_reason=reason,
+        )
 
     def days_left(self, day: dt.date) -> int:
         return (self.expires_on - day).days

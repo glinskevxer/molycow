@@ -37,7 +37,7 @@ Python 3.12 or 3.13. The only runtime dependency is click.
 
 ```console
 $ molycow --book day.sqlite3 book init
-day.sqlite3 is at schema 17, 17 steps applied
+day.sqlite3 is at schema 18, 18 steps applied
 
 $ molycow --book day.sqlite3 customer add "Saint Brannon Medical Centre" \
     --kind hospital --licence 42-28931-01 --street "1400 Weir Street" \
@@ -64,6 +64,7 @@ CS-9912 Cs-137 200.0 uCi certified 2019-07-01
 $ molycow --book day.sqlite3 instrument check IC-0001 CS-9912 \
     --at "2025-04-08 06:05" --read "175.0 uCi" --by "K. Ruzicka"
 IC-0001 constancy passed at -0.1%
+expected 175.1 uCi
 
 $ molycow --book day.sqlite3 generator receive M99-44182 \
     --maker "Corren Isotopes" --activity "2 Ci" --calibrated "2025-04-05 12:00" \
@@ -93,9 +94,33 @@ B-250408-01 95.9% against a floor of 90%
 $ molycow --book day.sqlite3 dose draw ORD-250407-01 B-250408-01 \
     --at "2025-04-08 07:40" --assay "25.65 mCi" --by "K. Ruzicka" --calibrator IC-0001
 DS-250408-01 0.312 mL reading 25.65 mCi, 21.99 mCi at calibration (-0.0%)
+DS-250408-01 Tc-99m medronate 22.0 mCi at 0900
 
 $ molycow --book day.sqlite3 report day --on 2025-04-08
 hot lab day sheet 2025-04-08
+============================
+
+elutions
+  EL-250408-01 GEN-0001 2025-04-08 06:30 CDT 940.0 mCi in 10.000 mL yield 97.9% moly 0.0010
+
+batches
+  B-250408-01 MDP 2025-04-08 07:15 CDT 300.0 mCi in 3.480 mL rcp 95.9%
+
+doses
+  DS-250408-01 CU-0001 A-4471902 MDP 22.0 mCi at 2025-04-08 09:00 CDT drawn 0.312 mL off B-250408-01 (-0.0%)
+
+shipments
+  nothing left the dock
+
+survey
+  areas not surveyed: hot lab, dispensing bench, packaging, waste store
+
+waste store
+  nothing in the store
+
+on the premises at midnight
+  Mo-99 827.6 mCi 4.1% of limit
+  Tc-99m 125.0 mCi 0.6% of limit
 ```
 
 The dose command is refused unless that calibrator passed its constancy check

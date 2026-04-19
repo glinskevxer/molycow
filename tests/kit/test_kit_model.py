@@ -172,3 +172,12 @@ def test_more_eluate_than_the_vial_holds_is_refused() -> None:
 
 def test_a_vial_made_up_of_nothing_but_eluate_has_no_saline() -> None:
     assert a_batch(eluate_volume=Volume.of(6)).saline == Volume.zero()
+
+
+def test_a_recalled_lot_is_off_the_shelf_whatever_its_expiry() -> None:
+    from tests.conftest import at
+
+    lot = a_lot().recalled(at("2025-04-10 09:00"), "maker found particulates")
+    assert lot.is_recalled
+    assert not lot.is_in_date(dt.date(2025, 4, 11))
+    assert lot.recall_reason == "maker found particulates"

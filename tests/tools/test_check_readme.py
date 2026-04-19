@@ -46,3 +46,32 @@ def test_a_step_that_fails_reads_as_an_error(tmp_path: Path) -> None:
     step = check_readme.Step(1, "--book day.sqlite3 book counts", ())
     printed = check_readme.replay(step, tmp_path / "nothing.sqlite3")
     assert printed[0].startswith("error: there is no book")
+
+
+def test_the_update_mode_leaves_a_correct_readme_alone() -> None:
+    before = check_readme.README.read_text()
+    assert check_readme.main(["--update"]) == 0
+    assert check_readme.README.read_text() == before
+
+
+def test_the_update_mode_rewrites_an_output_that_has_moved(tmp_path: Path) -> None:
+    original = check_readme.README
+    copy = tmp_path / "README.md"
+    copy.write_text(
+        original.read_text().replace(
+            "day.sqlite3 is at schema", "day.sqlite3 is at schema 3 and", 1
+        )
+    )
+    check_readme.README = copy
+    try:
+        assert check_readme.findings()
+        assert check_readme.rewrite() >= 1
+        assert check_readme.findings() == []
+    finally:
+        check_readme.README = original
+
+
+def test_the_transcript_carries_the_whole_day_sheet() -> None:
+    text = check_readme.README.read_text()
+    assert "hot lab day sheet 2025-04-08" in text
+    assert "on the premises at midnight" in text

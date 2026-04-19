@@ -75,6 +75,51 @@ def replay(step: Step, book: Path) -> list[str]:
     return [line.replace(str(book), BOOK) for line in result.output.splitlines()]
 
 
+def rewrite() -> int:
+    """Replay the transcript and write back what the commands actually printed.
+
+    The console block is rebuilt whole: the command lines are kept exactly as
+    they were written, continuations and all, and the output under each one is
+    replaced by what the command printed this time. The alternative is a readme
+    hand edited after every migration, which is the chore that ends with a
+    readme nobody trusts.
+    """
+    lines = README.read_text(encoding="utf-8").splitlines()
+    opened = lines.index("```console")
+    closed = lines.index("```", opened + 1)
+    rebuilt: list[str] = []
+    changed = 0
+    with tempfile.TemporaryDirectory() as folder:
+        book = Path(folder) / BOOK
+        number = opened + 1
+        while number < closed:
+            raw = lines[number]
+            if not raw.strip().startswith("$ molycow"):
+                number += 1
+                continue
+            command_lines = [raw]
+            command = raw.strip()[len("$ molycow ") :]
+            while command.endswith("\\") and number + 1 < closed:
+                number += 1
+                command_lines.append(lines[number])
+                command = command[:-1].strip() + " " + lines[number].strip()
+            number += 1
+            was: list[str] = []
+            while number < closed and lines[number].strip() and not lines[number].startswith("$"):
+                was.append(lines[number])
+                number += 1
+            printed = replay(Step(0, command, ()), book)
+            if [one.strip() for one in was] != [one.strip() for one in printed]:
+                changed += 1
+            if rebuilt:
+                rebuilt.append("")
+            rebuilt.extend(command_lines)
+            rebuilt.extend(printed)
+    lines[opened + 1 : closed] = rebuilt
+    README.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return changed
+
+
 def findings() -> list[Finding]:
     """Everything in the readme the build no longer agrees with."""
     found: list[Finding] = []
@@ -103,8 +148,12 @@ def findings() -> list[Finding]:
     return found
 
 
-def main() -> int:
-    """Run the check and give back the status ci should see."""
+def main(argv: list[str] | None = None) -> int:
+    """Run the check, or rewrite the transcript's output when asked to."""
+    args = sys.argv[1:] if argv is None else argv
+    if "--update" in args:
+        print(f"check_readme: rewrote {rewrite()} outputs")
+        return 0
     return report("check_readme", findings())
 
 

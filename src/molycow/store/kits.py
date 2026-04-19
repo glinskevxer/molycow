@@ -19,6 +19,8 @@ from molycow.store.rows import (
     date_out,
     decimal_in,
     decimal_out,
+    maybe_moment_in,
+    maybe_text_in,
     moment_in,
     moment_out,
     text_in,
@@ -37,6 +39,8 @@ def kit_lot_from(row: sqlite3.Row) -> KitLot:
         received_on=date_in(row["received_on"], "received_on"),
         expires_on=date_in(row["expires_on"], "expires_on"),
         vials=int(row["vials"]),
+        recalled_at=maybe_moment_in(row["recalled_at"], "recalled_at"),
+        recall_reason=maybe_text_in(row, "recall_reason"),
     )
 
 
@@ -111,6 +115,19 @@ class KitLotRepository:
         lots = self.for_code(code, in_date_on=on)
         return lots[0] if lots else None
 
+    def recall(self, lot_id: str, at: dt.datetime, reason: str) -> KitLot:
+        """Pull a lot off the shelf and say why."""
+        recalled = self.get(lot_id).recalled(at, reason)
+        self._book.execute(
+            "UPDATE kit_lot SET recalled_at = ?, recall_reason = ? WHERE id = ?",
+            (moment_out(at), reason, lot_id),
+        )
+        return recalled
+
+    def recalled(self) -> list[KitLot]:
+        """Every lot that has been pulled."""
+        return [one for one in self.all() if one.is_recalled]
+
     def next_id(self) -> str:
         issued = [str(row["id"]) for row in self._book.all("SELECT id FROM kit_lot")]
         return make(Kind.KIT_LOT, next_serial(issued, Kind.KIT_LOT))
@@ -166,6 +183,13 @@ class BatchRepository:
     def for_elution(self, elution_id: str) -> list[Batch]:
         rows = self._book.all(
             "SELECT * FROM batch WHERE elution_id = ? ORDER BY made_at, id", (elution_id,)
+        )
+        return [batch_from(row) for row in rows]
+
+    def for_kit_lot(self, lot_id: str) -> list[Batch]:
+        """Every batch made out of one box of cold kits."""
+        rows = self._book.all(
+            "SELECT * FROM batch WHERE kit_lot_id = ? ORDER BY made_at, id", (lot_id,)
         )
         return [batch_from(row) for row in rows]
 

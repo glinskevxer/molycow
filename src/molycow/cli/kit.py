@@ -11,6 +11,7 @@ from molycow.model.kit import KitLot
 from molycow.model.purity import Strip, System
 from molycow.service.compound import CompoundService
 from molycow.service.purity import PurityService
+from molycow.service.recall import RecallService
 from molycow.store.kits import KitLotRepository
 from molycow.units import Activity, Volume
 
@@ -229,3 +230,43 @@ def kit_day(session: Session, on_day: str) -> None:
                 f"{day_of(batch.made_at, session.tz)}  {purity}  "
                 f"floor {formula(batch.code).rcp_floor}%"
             )
+
+
+@kit.command("recall")
+@click.argument("lot_id")
+@click.option("--at", "moment", required=True)
+@click.option("--why", "reason", required=True, help="what the maker found")
+@click.option("--by", "recalled_by", required=True)
+@click.pass_obj
+def kit_recall(session: Session, lot_id: str, moment: str, reason: str, recalled_by: str) -> None:
+    """Pull a lot and print everything it reached."""
+    with session.open() as book:
+        reach = RecallService(book, session.tz).recall(
+            lot_id, parse_moment(moment, session.tz), reason, recalled_by
+        )
+        for line in reach.lines():
+            click.echo(line)
+        if reach.is_empty:
+            click.echo("  nothing was made from it")
+        for shipment_id in reach.shipments:
+            click.echo(f"  box {shipment_id} went out")
+
+
+@kit.command("recalled")
+@click.pass_obj
+def kit_recalled(session: Session) -> None:
+    """The lots that have been pulled, and what came out of them."""
+    with session.open() as book:
+        service = RecallService(book, session.tz)
+        lots = service.recalled_lots()
+        if not lots:
+            click.echo("nothing has been recalled")
+            return
+        for lot in lots:
+            assert lot.recalled_at is not None
+            click.echo(
+                f"{lot.id}  {lot.code:7} lot {lot.lot:8} pulled "
+                f"{stamp(lot.recalled_at, session.tz)}  {lot.recall_reason}"
+            )
+        for batch in service.batches_from_recalled():
+            click.echo(f"  batch {batch.id} came out of a pulled lot")
