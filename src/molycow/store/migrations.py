@@ -410,6 +410,19 @@ ALTER TABLE kit_lot ADD COLUMN recall_reason TEXT;
 """
 
 
+RETURNS = """
+CREATE TABLE dose_return (
+  dose_id      TEXT PRIMARY KEY REFERENCES dose(id),
+  returned_at  TEXT NOT NULL,
+  reason       TEXT NOT NULL,
+  received_by  TEXT NOT NULL,
+  container_id TEXT REFERENCES container(id)
+);
+
+CREATE INDEX dose_return_by_container ON dose_return(container_id);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -429,6 +442,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(16, "keys indexed", KEYS_INDEXED),
     Migration(17, "audit trail", AUDIT_TRAIL),
     Migration(18, "recalls", RECALLS),
+    Migration(19, "returns", RETURNS),
 )
 
 

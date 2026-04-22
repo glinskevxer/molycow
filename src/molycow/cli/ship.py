@@ -8,6 +8,7 @@ import click
 
 from molycow.cli.session import Session
 from molycow.clock import parse_day, parse_moment, stamp
+from molycow.service.returns import ReturnService
 from molycow.service.shipping import ShippingService
 from molycow.store.shipments import ShipmentRepository
 
@@ -126,3 +127,37 @@ def ship_show(session: Session, shipment_id: str) -> None:
             click.echo(f"  {dose_id}")
         if box.delivered_at is not None:
             click.echo(f"  signed by {box.received_by} {stamp(box.delivered_at, session.tz)}")
+
+
+@ship.command("return")
+@click.argument("dose_id")
+@click.option("--at", "moment", required=True)
+@click.option("--why", "reason", required=True, help="why it was not used")
+@click.option("--by", "received_by", required=True)
+@click.pass_obj
+def ship_return(session: Session, dose_id: str, moment: str, reason: str, received_by: str) -> None:
+    """Book a syringe back in and put it in a decay container."""
+    with session.open() as book:
+        came_back = ReturnService(book, session.tz).take_back(
+            dose_id, parse_moment(moment, session.tz), reason, received_by
+        )
+        click.echo(came_back.line())
+
+
+@ship.command("returns")
+@click.option("--customer", "customer_id", default=None)
+@click.option("--at", "moment", default=None, help="add the returns up at this moment")
+@click.pass_obj
+def ship_returns(session: Session, customer_id: str | None, moment: str | None) -> None:
+    """The syringes that came back."""
+    with session.open() as book:
+        service = ReturnService(book, session.tz)
+        found = service.for_customer(customer_id) if customer_id else service.all()
+        if not found:
+            click.echo("nothing has come back")
+            return
+        for one in found:
+            click.echo(one.line())
+        if moment is not None:
+            when = parse_moment(moment, session.tz)
+            click.echo(f"{service.unused_activity(when).format('mci', 2)} still in the returns")

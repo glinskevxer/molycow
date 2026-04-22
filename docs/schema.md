@@ -1,6 +1,6 @@
 # schema
 
-Generated from the migrations. Schema version 18.
+Generated from the migrations. Schema version 19.
 
 ## audit
 
@@ -119,6 +119,17 @@ Generated from the migrations. Schema version 18.
 - `batch_id` points at `batch.id`
 - `order_id` points at `customer_order.id`
 - indexes: dose_by_batch, dose_by_calibrator, dose_by_drawn_at, dose_by_order
+
+## dose_return
+
+- `dose_id` TEXT (primary key)
+- `returned_at` TEXT (not null)
+- `reason` TEXT (not null)
+- `received_by` TEXT (not null)
+- `container_id` TEXT
+- `container_id` points at `container.id`
+- `dose_id` points at `dose.id`
+- indexes: dose_return_by_container
 
 ## elution
 

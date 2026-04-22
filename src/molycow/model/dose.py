@@ -110,3 +110,23 @@ class Dose:
             f"{self.id} {self.formula.nuclide} {self.formula.name} "
             f"{ordered.format('mci', 1)} at {clock}"
         )
+
+
+@dataclass(frozen=True)
+class DoseReturn:
+    """A syringe the hospital sent back, and why."""
+
+    dose_id: str
+    returned_at: dt.datetime
+    reason: str
+    received_by: str
+    container_id: str | None = None
+
+    def __post_init__(self) -> None:
+        expect(self.dose_id, Kind.DOSE)
+        if not self.reason.strip():
+            raise ValidationError("a return says why", dose=self.dose_id)
+        if not self.received_by.strip():
+            raise ValidationError("a return is signed for", dose=self.dose_id)
+        if self.container_id is not None:
+            expect(self.container_id, Kind.CONTAINER)
