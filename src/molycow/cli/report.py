@@ -7,6 +7,7 @@ import click
 from molycow.cli.session import Session
 from molycow.clock import parse_day, parse_moment
 from molycow.report.daysheet import day_sheet
+from molycow.report.period import Period, month, period_sheet
 from molycow.service.inventory import InventoryService
 from molycow.store.licence import LicenceRepository
 
@@ -34,6 +35,29 @@ def report_day(session: Session, on_day: str, section: str | None) -> None:
             )
         for line in sheet.section(section).lines():
             click.echo(line)
+
+
+@report.command("month")
+@click.argument("year", type=int)
+@click.argument("number", type=int)
+@click.pass_obj
+def report_month(session: Session, year: int, number: int) -> None:
+    """The period report for a calendar month."""
+    with session.open() as book:
+        click.echo(period_sheet(book, month(year, number), session.tz).text())
+
+
+@report.command("period")
+@click.option("--from", "first", required=True)
+@click.option("--to", "last", required=True)
+@click.pass_obj
+def report_period(session: Session, first: str, last: str) -> None:
+    """The period report between two days."""
+    with session.open() as book:
+        over = Period(parse_day(first), parse_day(last))
+        if over.last < over.first:
+            raise click.BadParameter("that period ends before it starts")
+        click.echo(period_sheet(book, over, session.tz).text())
 
 
 @report.command("holdings")
