@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import click
 
 from molycow.cli.session import Session
 from molycow.clock import parse_day, parse_moment
 from molycow.report.daysheet import day_sheet
+from molycow.report.export import export_day
 from molycow.report.period import Period, month, period_sheet
 from molycow.service.inventory import InventoryService
 from molycow.store.licence import LicenceRepository
@@ -109,3 +112,16 @@ def report_room(session: Session, symbol: str, moment: str) -> None:
             f"{limit.limit.format('ci', 1)}, room for "
             f"{limit.headroom(holding).format('mci', 1)}"
         )
+
+
+@report.command("export")
+@click.argument("folder", type=click.Path(file_okay=False, path_type=Path))
+@click.option("--on", "on_day", required=True)
+@click.pass_obj
+def report_export(session: Session, folder: Path, on_day: str) -> None:
+    """Write a day out as csv."""
+    with session.open() as book:
+        written = export_day(book, parse_day(on_day), folder, session.tz)
+        for one in written:
+            click.echo(one.line())
+        click.echo(f"{sum(one.rows for one in written)} rows into {folder}")

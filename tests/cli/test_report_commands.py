@@ -77,3 +77,31 @@ def test_a_nuclide_the_licence_does_not_name(runner: CliRunner, bookfile: Path) 
     result = call(runner, bookfile, "report", "room", "Y-90", "--at", "2025-04-08 08:00")
     assert result.exit_code != 0
     assert "does not name" in str(result.exception)
+
+
+def test_a_day_is_written_out_as_csv(runner: CliRunner, bookfile: Path, tmp_path: Path) -> None:
+    folder = tmp_path / "out"
+    result = call(runner, bookfile, "report", "export", str(folder), "--on", "2025-04-08")
+    assert "doses.csv" in result.output
+    assert "rows into" in result.output
+    assert (folder / "doses.csv").exists()
+
+
+def test_the_month_report_prints(runner: CliRunner, bookfile: Path) -> None:
+    result = call(runner, bookfile, "report", "month", "2025", "4")
+    assert "period report 2025-04-01 to 2025-04-30" in result.output
+    assert "column yields" in result.output
+
+
+def test_a_period_that_ends_before_it_starts_is_refused(runner: CliRunner, bookfile: Path) -> None:
+    result = call(
+        runner, bookfile, "report", "period", "--from", "2025-04-30", "--to", "2025-04-01"
+    )
+    assert result.exit_code != 0
+
+
+def test_a_period_between_two_days_prints(runner: CliRunner, bookfile: Path) -> None:
+    result = call(
+        runner, bookfile, "report", "period", "--from", "2025-04-01", "--to", "2025-04-30"
+    )
+    assert "1 doses" in result.output
