@@ -402,3 +402,57 @@ def test_a_pulled_lot_cannot_be_compounded_from(runner: CliRunner, bookfile: Pat
     )
     assert result.exit_code != 0
     assert "no kit of that sort" in str(result.exception)
+
+
+def test_the_fridge_is_read_and_logged(runner: CliRunner, bookfile: Path) -> None:
+    result = call(
+        runner,
+        bookfile,
+        "kit",
+        "fridge",
+        "--at",
+        "2025-04-08 06:10",
+        "--celsius",
+        "4.5",
+        "--by",
+        "K. Ruzicka",
+    )
+    assert "in range" in result.output
+    logged = call(runner, bookfile, "kit", "fridge-log", "--on", "2025-04-08")
+    assert "4.5" in logged.output
+
+
+def test_a_day_nobody_read_the_fridge(runner: CliRunner, bookfile: Path) -> None:
+    assert (
+        "nobody read the fridge"
+        in call(runner, bookfile, "kit", "fridge-log", "--on", "2025-04-08").output
+    )
+
+
+def test_an_excursion_is_open_until_it_is_reviewed(runner: CliRunner, bookfile: Path) -> None:
+    call(
+        runner,
+        bookfile,
+        "kit",
+        "fridge",
+        "--at",
+        "2025-04-08 06:10",
+        "--celsius",
+        "11.5",
+        "--by",
+        "K. Ruzicka",
+    )
+    assert "EXCURSION" in call(runner, bookfile, "kit", "fridge-log").output
+    call(
+        runner,
+        bookfile,
+        "kit",
+        "fridge-review",
+        "--reading",
+        "2025-04-08 06:10",
+        "--at",
+        "2025-04-08 08:00",
+        "--by",
+        "P. Vantrease",
+    )
+    assert "nothing open against the fridge" in call(runner, bookfile, "kit", "fridge-log").output

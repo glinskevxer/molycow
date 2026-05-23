@@ -17,6 +17,7 @@ from molycow.errors import NotFoundError, RuleError
 from molycow.formulary import Formula, formula
 from molycow.model.kit import Batch, KitLot
 from molycow.service.breakthrough import BreakthroughService
+from molycow.service.fridge import FridgeService
 from molycow.store.audit import AuditRepository
 from molycow.store.book import Book
 from molycow.store.generators import ElutionRepository
@@ -51,6 +52,7 @@ class CompoundService:
         self._lots = KitLotRepository(book)
         self._batches = BatchRepository(book)
         self._release = BreakthroughService(book)
+        self._fridge = FridgeService(book, self._tz)
         self._audit = AuditRepository(book)
 
     def drawn_from(self, elution_id: str) -> Volume:
@@ -88,6 +90,8 @@ class CompoundService:
                 "that eluate may not be drawn from at that moment",
                 elution=elution_id,
             )
+        if monograph.refrigerate:
+            self._fridge.require_clear(monograph.code)
         lot = self._lots.oldest_in_date(monograph.code, day_of(at, self._tz))
         if lot is None:
             raise NotFoundError("no kit of that sort is in date", kit=monograph.code)

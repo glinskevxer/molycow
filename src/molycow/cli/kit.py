@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 import click
 
 from molycow.cli.session import Session
@@ -10,6 +12,7 @@ from molycow.formulary import codes, formula, known
 from molycow.model.kit import KitLot
 from molycow.model.purity import Strip, System
 from molycow.service.compound import CompoundService
+from molycow.service.fridge import FridgeService
 from molycow.service.purity import PurityService
 from molycow.service.recall import RecallService
 from molycow.store.kits import KitLotRepository
@@ -270,3 +273,54 @@ def kit_recalled(session: Session) -> None:
             )
         for batch in service.batches_from_recalled():
             click.echo(f"  batch {batch.id} came out of a pulled lot")
+
+
+@kit.command("fridge")
+@click.option("--at", "moment", required=True)
+@click.option("--celsius", required=True, help="what the thermometer read")
+@click.option("--by", "read_by", required=True)
+@click.pass_obj
+def kit_fridge(session: Session, moment: str, celsius: str, read_by: str) -> None:
+    """Write a fridge reading down."""
+    with session.open() as book:
+        reading = FridgeService(book, session.tz).record(
+            parse_moment(moment, session.tz), Decimal(celsius), read_by
+        )
+        click.echo(reading.line())
+
+
+@kit.command("fridge-log")
+@click.option("--on", "on_day", default=None)
+@click.pass_obj
+def kit_fridge_log(session: Session, on_day: str | None) -> None:
+    """The fridge readings, and anything still open against them."""
+    with session.open() as book:
+        service = FridgeService(book, session.tz)
+        found = service.readings_on(parse_day(on_day)) if on_day else []
+        if on_day is None:
+            for one in service.open_excursions():
+                click.echo(one.line())
+            if service.is_clear():
+                click.echo("nothing open against the fridge")
+            return
+        if not found:
+            click.echo("nobody read the fridge")
+            return
+        for one in found:
+            click.echo(one.line())
+
+
+@kit.command("fridge-review")
+@click.option("--reading", "read_at", required=True, help="the moment of the reading")
+@click.option("--at", "moment", required=True)
+@click.option("--by", "reviewed_by", required=True)
+@click.pass_obj
+def kit_fridge_review(session: Session, read_at: str, moment: str, reviewed_by: str) -> None:
+    """Close an excursion by putting a name against it."""
+    with session.open() as book:
+        reviewed = FridgeService(book, session.tz).review(
+            parse_moment(read_at, session.tz),
+            parse_moment(moment, session.tz),
+            reviewed_by,
+        )
+        click.echo(reviewed.line())

@@ -423,6 +423,20 @@ CREATE INDEX dose_return_by_container ON dose_return(container_id);
 """
 
 
+FRIDGE_LOG = """
+CREATE TABLE fridge_reading (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  read_at     TEXT NOT NULL,
+  celsius     TEXT NOT NULL,
+  read_by     TEXT NOT NULL,
+  reviewed_at TEXT,
+  reviewed_by TEXT
+);
+
+CREATE INDEX fridge_reading_by_day ON fridge_reading(read_at);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -443,6 +457,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(17, "audit trail", AUDIT_TRAIL),
     Migration(18, "recalls", RECALLS),
     Migration(19, "returns", RETURNS),
+    Migration(20, "fridge log", FRIDGE_LOG),
 )
 
 

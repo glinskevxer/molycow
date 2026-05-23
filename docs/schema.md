@@ -1,6 +1,6 @@
 # schema
 
-Generated from the migrations. Schema version 19.
+Generated from the migrations. Schema version 20.
 
 ## audit
 
@@ -142,6 +142,16 @@ Generated from the migrations. Schema version 19.
 - `residual` TEXT (not null)
 - `generator_id` points at `generator.id`
 - indexes: elution_by_generator
+
+## fridge_reading
+
+- `id` INTEGER (primary key)
+- `read_at` TEXT (not null)
+- `celsius` TEXT (not null)
+- `read_by` TEXT (not null)
+- `reviewed_at` TEXT
+- `reviewed_by` TEXT
+- indexes: fridge_reading_by_day
 
 ## generator
 
