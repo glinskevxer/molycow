@@ -11,7 +11,7 @@ from molycow.errors import NotFoundError
 from molycow.ids import Kind, make, next_serial
 from molycow.model.instrument import CheckSource, Instrument, InstrumentKind
 from molycow.model.qc import CheckKind, LinearityPoint, LinearityRun, QcCheck
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import (
     activity_in,
     activity_out,
@@ -62,11 +62,8 @@ def check_from(row: sqlite3.Row) -> QcCheck:
     )
 
 
-class InstrumentRepository:
+class InstrumentRepository(Records):
     """The instruments in the lab."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, instrument: Instrument) -> Instrument:
         self._book.execute(
@@ -94,10 +91,7 @@ class InstrumentRepository:
 
     def get(self, instrument_id: str) -> Instrument:
         """One instrument, or a refusal if it is not in the book."""
-        found = self.find(instrument_id)
-        if found is None:
-            raise NotFoundError("no such instrument", id=instrument_id)
-        return found
+        return self.required(self.find(instrument_id), "no such instrument", id=instrument_id)
 
     def all(self) -> list[Instrument]:
         rows = self._book.all("SELECT * FROM instrument ORDER BY id")
@@ -130,11 +124,8 @@ class InstrumentRepository:
         return make(Kind.INSTRUMENT, next_serial(issued, Kind.INSTRUMENT))
 
 
-class CheckSourceRepository:
+class CheckSourceRepository(Records):
     """The sealed sources on the shelf."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, source: CheckSource) -> CheckSource:
         self._book.execute(
@@ -159,10 +150,7 @@ class CheckSourceRepository:
 
     def get(self, serial: str) -> CheckSource:
         """One check source, or a refusal if it is not in the book."""
-        found = self.find(serial)
-        if found is None:
-            raise NotFoundError("no such check source", serial=serial)
-        return found
+        return self.required(self.find(serial), "no such check source", serial=serial)
 
     def all(self) -> list[CheckSource]:
         rows = self._book.all("SELECT * FROM check_source ORDER BY serial")
@@ -172,11 +160,8 @@ class CheckSourceRepository:
         return [one for one in self.all() if one.is_in_use_on(day)]
 
 
-class QcRepository:
+class QcRepository(Records):
     """Every check that has been run, and the linearity runs."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, check: QcCheck) -> QcCheck:
         self._book.execute(

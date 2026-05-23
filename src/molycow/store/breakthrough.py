@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import sqlite3
 
-from molycow.errors import NotFoundError
 from molycow.model.breakthrough import Breakthrough
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import (
     activity_in,
     activity_out,
@@ -30,11 +29,8 @@ def breakthrough_from(row: sqlite3.Row) -> Breakthrough:
     )
 
 
-class BreakthroughRepository:
+class BreakthroughRepository(Records):
     """One test per elution, and it does not get run twice."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, test: Breakthrough) -> Breakthrough:
         self._book.execute(
@@ -60,10 +56,9 @@ class BreakthroughRepository:
 
     def get(self, elution_id: str) -> Breakthrough:
         """One breakthrough test, or a refusal if it is not in the book."""
-        found = self.find(elution_id)
-        if found is None:
-            raise NotFoundError("that eluate has not been tested", elution=elution_id)
-        return found
+        return self.required(
+            self.find(elution_id), "that eluate has not been tested", elution=elution_id
+        )
 
     def all(self) -> list[Breakthrough]:
         rows = self._book.all("SELECT * FROM breakthrough ORDER BY tested_at, elution_id")

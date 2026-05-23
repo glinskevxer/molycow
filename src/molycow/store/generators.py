@@ -7,10 +7,9 @@ import sqlite3
 from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
-from molycow.errors import NotFoundError
 from molycow.ids import Kind, make, next_serial
 from molycow.model.generator import Elution, Generator
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import (
     activity_in,
     activity_out,
@@ -52,11 +51,8 @@ def elution_from(row: sqlite3.Row) -> Elution:
     )
 
 
-class GeneratorRepository:
+class GeneratorRepository(Records):
     """Every column the pharmacy has had."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, generator: Generator) -> Generator:
         self._book.execute(
@@ -85,10 +81,7 @@ class GeneratorRepository:
 
     def get(self, generator_id: str) -> Generator:
         """One column, or a refusal if it is not in the book."""
-        found = self.find(generator_id)
-        if found is None:
-            raise NotFoundError("no such generator", id=generator_id)
-        return found
+        return self.required(self.find(generator_id), "no such generator", id=generator_id)
 
     def all(self) -> list[Generator]:
         return [
@@ -122,11 +115,8 @@ class GeneratorRepository:
         return make(Kind.GENERATOR, next_serial(issued, Kind.GENERATOR))
 
 
-class ElutionRepository:
+class ElutionRepository(Records):
     """Every milking, in the order it happened."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, elution: Elution) -> Elution:
         self._book.execute(
@@ -153,10 +143,7 @@ class ElutionRepository:
 
     def get(self, elution_id: str) -> Elution:
         """One elution, or a refusal if it is not in the book."""
-        found = self.find(elution_id)
-        if found is None:
-            raise NotFoundError("no such elution", id=elution_id)
-        return found
+        return self.required(self.find(elution_id), "no such elution", id=elution_id)
 
     def for_generator(self, generator_id: str) -> list[Elution]:
         rows = self._book.all(

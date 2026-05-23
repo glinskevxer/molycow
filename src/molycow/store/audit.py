@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
 from molycow.model.audit import Entry
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import moment_in, moment_out, text_in
 
 
@@ -23,11 +23,8 @@ def entry_from(row: sqlite3.Row) -> Entry:
     )
 
 
-class AuditRepository:
+class AuditRepository(Records):
     """Everything that has been done to the book, in the order it happened."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, entry: Entry) -> Entry:
         self._book.execute(

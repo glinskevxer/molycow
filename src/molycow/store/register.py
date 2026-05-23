@@ -7,7 +7,7 @@ import sqlite3
 
 from molycow.errors import NotFoundError
 from molycow.model.register import AuthorizedUser, Customer, CustomerKind
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import date_in, date_out, maybe_date_in, maybe_text_in, text_in
 
 
@@ -26,11 +26,8 @@ def customer_from(row: sqlite3.Row) -> Customer:
     )
 
 
-class CustomerRepository:
+class CustomerRepository(Records):
     """The places the pharmacy ships to."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, customer: Customer) -> Customer:
         self._book.execute(
@@ -59,10 +56,7 @@ class CustomerRepository:
 
     def get(self, customer_id: str) -> Customer:
         """One customer, or a refusal if it is not in the book."""
-        found = self.find(customer_id)
-        if found is None:
-            raise NotFoundError("no such customer", id=customer_id)
-        return found
+        return self.required(self.find(customer_id), "no such customer", id=customer_id)
 
     def by_name(self, name: str) -> Customer:
         """A customer by the name on their letterhead."""
@@ -104,11 +98,8 @@ class CustomerRepository:
         return int(self._book.value("SELECT count(*) FROM customer") or 0)
 
 
-class AuthorizedUserRepository:
+class AuthorizedUserRepository(Records):
     """The physicians named on those licences."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, user: AuthorizedUser) -> AuthorizedUser:
         with self._book.atomic():
@@ -158,10 +149,7 @@ class AuthorizedUserRepository:
 
     def get(self, user_id: str) -> AuthorizedUser:
         """One authorized user, or a refusal if it is not in the book."""
-        found = self.find(user_id)
-        if found is None:
-            raise NotFoundError("no such authorized user", id=user_id)
-        return found
+        return self.required(self.find(user_id), "no such authorized user", id=user_id)
 
     def for_customer(self, customer_id: str, on: dt.date | None = None) -> list[AuthorizedUser]:
         rows = self._book.all(

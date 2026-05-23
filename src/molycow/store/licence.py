@@ -2,18 +2,14 @@
 
 from __future__ import annotations
 
-from molycow.errors import NotFoundError
 from molycow.model.licence import PossessionLimit
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import decimal_in, decimal_out, text_in
 from molycow.units import Activity
 
 
-class LicenceRepository:
+class LicenceRepository(Records):
     """The nuclides the licence names, and the ceiling on each."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def find(self, symbol: str) -> PossessionLimit | None:
         row = self._book.one("SELECT * FROM possession_limit WHERE symbol = ?", (symbol,))
@@ -27,10 +23,9 @@ class LicenceRepository:
 
     def get(self, symbol: str) -> PossessionLimit:
         """One possession limit, or a refusal if it is not in the book."""
-        found = self.find(symbol)
-        if found is None:
-            raise NotFoundError("the licence does not name that nuclide", symbol=symbol)
-        return found
+        return self.required(
+            self.find(symbol), "the licence does not name that nuclide", symbol=symbol
+        )
 
     def all(self) -> list[PossessionLimit]:
         rows = self._book.all("SELECT symbol FROM possession_limit ORDER BY symbol")

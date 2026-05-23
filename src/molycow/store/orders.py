@@ -11,10 +11,9 @@ import sqlite3
 from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
-from molycow.errors import NotFoundError
 from molycow.ids import Kind, make, next_serial
 from molycow.model.order import Order, OrderState
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import activity_in, activity_out, moment_in, moment_out, text_in
 
 
@@ -34,11 +33,8 @@ def order_from(row: sqlite3.Row) -> Order:
     )
 
 
-class OrderRepository:
+class OrderRepository(Records):
     """Everything the hospitals have asked for."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, order: Order) -> Order:
         self._book.execute(
@@ -69,10 +65,7 @@ class OrderRepository:
 
     def get(self, order_id: str) -> Order:
         """One order, or a refusal if it is not in the book."""
-        found = self.find(order_id)
-        if found is None:
-            raise NotFoundError("no such order", id=order_id)
-        return found
+        return self.required(self.find(order_id), "no such order", id=order_id)
 
     def all(self) -> list[Order]:
         rows = self._book.all("SELECT * FROM customer_order ORDER BY calibration_at, id")

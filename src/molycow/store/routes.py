@@ -8,15 +8,12 @@ from molycow.clock import parse_clock
 from molycow.errors import NotFoundError
 from molycow.ids import Kind, make, next_serial
 from molycow.model.route import Route, Run
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import date_in, date_out, maybe_moment_in, moment_out, text_in
 
 
-class RouteRepository:
+class RouteRepository(Records):
     """The standing runs."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, route: Route) -> Route:
         with self._book.atomic():
@@ -51,10 +48,7 @@ class RouteRepository:
 
     def get(self, route_id: str) -> Route:
         """One route, or a refusal if it is not in the book."""
-        found = self.find(route_id)
-        if found is None:
-            raise NotFoundError("no such route", id=route_id)
-        return found
+        return self.required(self.find(route_id), "no such route", id=route_id)
 
     def all(self) -> list[Route]:
         rows = self._book.all("SELECT id FROM route ORDER BY leaves_at, id")
@@ -71,11 +65,8 @@ class RouteRepository:
         return make(Kind.ROUTE, next_serial(issued, Kind.ROUTE))
 
 
-class RunRepository:
+class RunRepository(Records):
     """One day of a route, and what went on it."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, run: Run) -> Run:
         self._book.execute(

@@ -6,10 +6,9 @@ import datetime as dt
 from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
-from molycow.errors import NotFoundError
 from molycow.ids import Kind, make, next_serial
 from molycow.model.shipment import Shipment
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import (
     activity_in,
     activity_out,
@@ -23,11 +22,8 @@ from molycow.store.rows import (
 )
 
 
-class ShipmentRepository:
+class ShipmentRepository(Records):
     """Every box that has gone out."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, shipment: Shipment) -> Shipment:
         with self._book.atomic():
@@ -81,10 +77,7 @@ class ShipmentRepository:
 
     def get(self, shipment_id: str) -> Shipment:
         """One shipment, or a refusal if it is not in the book."""
-        found = self.find(shipment_id)
-        if found is None:
-            raise NotFoundError("no such shipment", id=shipment_id)
-        return found
+        return self.required(self.find(shipment_id), "no such shipment", id=shipment_id)
 
     def all(self) -> list[Shipment]:
         rows = self._book.all("SELECT id FROM shipment ORDER BY packed_at, id")

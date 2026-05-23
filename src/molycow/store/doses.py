@@ -7,10 +7,9 @@ import sqlite3
 from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
-from molycow.errors import NotFoundError
 from molycow.ids import Kind, make, next_serial
 from molycow.model.dose import Dose
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import (
     activity_in,
     activity_out,
@@ -39,11 +38,8 @@ def dose_from(row: sqlite3.Row) -> Dose:
     )
 
 
-class DoseRepository:
+class DoseRepository(Records):
     """Every syringe that has been drawn."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, dose: Dose) -> Dose:
         self._book.execute(
@@ -74,10 +70,7 @@ class DoseRepository:
 
     def get(self, dose_id: str) -> Dose:
         """One dose, or a refusal if it is not in the book."""
-        found = self.find(dose_id)
-        if found is None:
-            raise NotFoundError("no such dose", id=dose_id)
-        return found
+        return self.required(self.find(dose_id), "no such dose", id=dose_id)
 
     def all(self) -> list[Dose]:
         rows = self._book.all("SELECT * FROM dose ORDER BY drawn_at, id")

@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import sqlite3
 
-from molycow.errors import NotFoundError
 from molycow.model.dose import DoseReturn
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import maybe_text_in, moment_in, moment_out, text_in
 
 
@@ -21,11 +20,8 @@ def return_from(row: sqlite3.Row) -> DoseReturn:
     )
 
 
-class ReturnRepository:
+class ReturnRepository(Records):
     """Every syringe that came back."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, came_back: DoseReturn) -> DoseReturn:
         self._book.execute(
@@ -49,10 +45,7 @@ class ReturnRepository:
 
     def get(self, dose_id: str) -> DoseReturn:
         """One return, or a refusal if that syringe is still out."""
-        found = self.find(dose_id)
-        if found is None:
-            raise NotFoundError("that dose has not come back", dose=dose_id)
-        return found
+        return self.required(self.find(dose_id), "that dose has not come back", dose=dose_id)
 
     def all(self) -> list[DoseReturn]:
         rows = self._book.all("SELECT * FROM dose_return ORDER BY returned_at, dose_id")

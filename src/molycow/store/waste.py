@@ -5,10 +5,9 @@ from __future__ import annotations
 import datetime as dt
 from decimal import Decimal
 
-from molycow.errors import NotFoundError
 from molycow.ids import Kind, make, next_serial
 from molycow.model.waste import Container, ContainerKind, WasteItem
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import (
     activity_in,
     activity_out,
@@ -22,11 +21,8 @@ from molycow.store.rows import (
 )
 
 
-class ContainerRepository:
+class ContainerRepository(Records):
     """The drums in the waste store."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, container: Container) -> Container:
         with self._book.atomic():
@@ -91,10 +87,7 @@ class ContainerRepository:
 
     def get(self, container_id: str) -> Container:
         """One container, or a refusal if it is not in the book."""
-        found = self.find(container_id)
-        if found is None:
-            raise NotFoundError("no such container", id=container_id)
-        return found
+        return self.required(self.find(container_id), "no such container", id=container_id)
 
     def all(self) -> list[Container]:
         rows = self._book.all("SELECT id FROM container ORDER BY opened_at, id")

@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import sqlite3
 
-from molycow.errors import NotFoundError
 from molycow.model.purity import PurityTest, Strip, System
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import moment_in, moment_out, text_in
 
 
@@ -31,11 +30,8 @@ def purity_from(row: sqlite3.Row) -> PurityTest:
     )
 
 
-class PurityRepository:
+class PurityRepository(Records):
     """One reading per batch."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, reading: PurityTest) -> PurityTest:
         self._book.execute(
@@ -65,10 +61,9 @@ class PurityRepository:
 
     def get(self, batch_id: str) -> PurityTest:
         """One purity reading, or a refusal if it is not in the book."""
-        found = self.find(batch_id)
-        if found is None:
-            raise NotFoundError("that batch has no purity reading", batch=batch_id)
-        return found
+        return self.required(
+            self.find(batch_id), "that batch has no purity reading", batch=batch_id
+        )
 
     def all(self) -> list[PurityTest]:
         rows = self._book.all("SELECT * FROM purity_test ORDER BY tested_at, batch_id")

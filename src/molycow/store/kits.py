@@ -8,10 +8,9 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
-from molycow.errors import NotFoundError
 from molycow.ids import Kind, make, next_serial
 from molycow.model.kit import Batch, KitLot
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import (
     activity_in,
     activity_out,
@@ -61,11 +60,8 @@ def batch_from(row: sqlite3.Row) -> Batch:
     )
 
 
-class KitLotRepository:
+class KitLotRepository(Records):
     """The cold kits on the shelf."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, lot: KitLot) -> KitLot:
         self._book.execute(
@@ -91,10 +87,7 @@ class KitLotRepository:
 
     def get(self, lot_id: str) -> KitLot:
         """One kit lot, or a refusal if it is not in the book."""
-        found = self.find(lot_id)
-        if found is None:
-            raise NotFoundError("no such kit lot", id=lot_id)
-        return found
+        return self.required(self.find(lot_id), "no such kit lot", id=lot_id)
 
     def all(self) -> list[KitLot]:
         return [kit_lot_from(row) for row in self._book.all("SELECT * FROM kit_lot ORDER BY id")]
@@ -136,11 +129,8 @@ class KitLotRepository:
         return int(self._book.value("SELECT count(*) FROM kit_lot") or 0)
 
 
-class BatchRepository:
+class BatchRepository(Records):
     """Everything compounded on the bench."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, batch: Batch) -> Batch:
         self._book.execute(
@@ -171,10 +161,7 @@ class BatchRepository:
 
     def get(self, batch_id: str) -> Batch:
         """One batch, or a refusal if it is not in the book."""
-        found = self.find(batch_id)
-        if found is None:
-            raise NotFoundError("no such batch", id=batch_id)
-        return found
+        return self.required(self.find(batch_id), "no such batch", id=batch_id)
 
     def all(self) -> list[Batch]:
         rows = self._book.all("SELECT * FROM batch ORDER BY made_at, id")

@@ -7,18 +7,14 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
-from molycow.errors import NotFoundError
 from molycow.ids import Kind, make, next_serial
 from molycow.model.survey import Area, DoseRate, Survey, Wipe
-from molycow.store.book import Book
+from molycow.store.records import Records
 from molycow.store.rows import decimal_in, decimal_out, moment_in, moment_out, text_in
 
 
-class SurveyRepository:
+class SurveyRepository(Records):
     """Every round of the building that has been walked."""
-
-    def __init__(self, book: Book) -> None:
-        self._book = book
 
     def add(self, survey: Survey) -> Survey:
         with self._book.atomic():
@@ -85,10 +81,7 @@ class SurveyRepository:
 
     def get(self, survey_id: str) -> Survey:
         """One survey, or a refusal if it is not in the book."""
-        found = self.find(survey_id)
-        if found is None:
-            raise NotFoundError("no such survey", id=survey_id)
-        return found
+        return self.required(self.find(survey_id), "no such survey", id=survey_id)
 
     def all(self) -> list[Survey]:
         rows = self._book.all("SELECT id FROM survey ORDER BY ran_at, id")
