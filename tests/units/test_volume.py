@@ -38,7 +38,7 @@ def test_drawing_more_than_the_vial_holds_is_refused() -> None:
         Volume.of(1) - Volume.of(2)
 
 
-def test_scaling_a_volume() -> None:
+def test_a_volume_can_be_scaled_by_a_factor() -> None:
     assert str(Volume.of(10).scaled("0.5")) == "5.000 mL"
     with pytest.raises(ValidationError, match="negative factor"):
         Volume.of(10).scaled(-2)

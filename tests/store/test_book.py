@@ -100,7 +100,7 @@ def test_a_savepoint_rolls_the_whole_group_back(book: Book) -> None:
     assert book.value("SELECT count(*) FROM parent") == 0
 
 
-def test_savepoints_nest(book: Book) -> None:
+def test_a_savepoint_inside_a_savepoint_rolls_back_on_its_own(book: Book) -> None:
     with book.atomic():
         book.execute("INSERT INTO parent VALUES (?, ?)", ("CU-0001", "Saint Brannon"))
         with pytest.raises(ValidationError):
