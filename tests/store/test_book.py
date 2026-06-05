@@ -163,3 +163,36 @@ def test_a_table_can_be_counted_by_name(book: Book) -> None:
 def test_a_table_that_is_not_in_the_book_cannot_be_counted(book: Book) -> None:
     with pytest.raises(ValidationError, match="no such table"):
         book.row_count("parent; DROP TABLE child")
+
+
+def test_a_sound_book_has_nothing_to_report(book: Book) -> None:
+    book.execute("INSERT INTO parent VALUES (?, ?)", ("CU-0001", "Saint Brannon"))
+    book.execute("INSERT INTO child VALUES (?, ?)", ("X-1", "CU-0001"))
+    assert book.integrity() == []
+
+
+def test_a_row_pointing_at_nothing_is_reported(book: Book) -> None:
+    book.execute("PRAGMA foreign_keys = OFF")
+    book.execute("INSERT INTO child VALUES (?, ?)", ("X-1", "CU-0404"))
+    book.execute("PRAGMA foreign_keys = ON")
+    problems = book.integrity()
+    assert len(problems) == 1
+    assert "points at a missing parent" in problems[0]
+
+
+def test_a_backup_is_a_book_of_its_own(book: Book, tmp_path: Path) -> None:
+    book.execute("INSERT INTO parent VALUES (?, ?)", ("CU-0001", "Saint Brannon"))
+    target = book.backup(tmp_path / "copy.sqlite3")
+    with Book.open(target) as copy:
+        assert copy.value("SELECT name FROM parent") == "Saint Brannon"
+    book.execute("INSERT INTO parent VALUES (?, ?)", ("CU-0002", "Halvern Clinic"))
+    with Book.open(target) as copy:
+        assert copy.row_count("parent") == 1
+
+
+def test_a_backup_cannot_be_the_book_itself(tmp_path: Path) -> None:
+    target = tmp_path / "day.sqlite3"
+    with Book.open(target) as opened:
+        opened.script(SETUP)
+        with pytest.raises(ValidationError, match="cannot be the book itself"):
+            opened.backup(target)

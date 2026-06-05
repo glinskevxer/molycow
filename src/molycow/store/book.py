@@ -136,6 +136,37 @@ class Book:
             raise ValidationError("there is no such table in this book", table=table)
         return int(self.value(f"SELECT count(*) FROM {table}") or 0)
 
+    def integrity(self) -> list[str]:
+        """What sqlite says about its own file, and what the keys say.
+
+        Two questions, not one. ``integrity_check`` reads the pages and says
+        whether the file is sound; ``foreign_key_check`` says whether the rows
+        still point at each other, which a file can fail while being perfectly
+        readable.
+        """
+        problems = [
+            str(row[0]) for row in self.all("PRAGMA integrity_check") if str(row[0]).lower() != "ok"
+        ]
+        for row in self.all("PRAGMA foreign_key_check"):
+            problems.append(f"{row[0]} row {row[1]} points at a missing {row[2]}")
+        return problems
+
+    def backup(self, path: Path) -> Path:
+        """Copy the whole book to another file while it is open.
+
+        sqlite's own backup is used rather than copying the file, because a
+        file copied while a write is in flight is a file that restores to a
+        book nobody wrote.
+        """
+        target = Path(path)
+        if target == self._path:
+            raise ValidationError("a backup cannot be the book itself", path=str(target))
+        self._require_open()
+        with sqlite3.connect(target) as other:
+            self._connection.backup(other)
+        other.close()
+        return target
+
     def close(self) -> None:
         if not self._closed:
             self._connection.close()

@@ -122,6 +122,30 @@ run.add_command(audit)
 run.add_command(physician)
 
 
+@book.command("verify")
+@click.pass_obj
+def book_verify(session: Session) -> None:
+    """Ask sqlite whether the file is sound and the keys still hold."""
+    with session.open() as opened:
+        problems = opened.integrity()
+        for problem in problems:
+            click.echo(problem)
+        if problems:
+            raise MolycowError(f"that book has {len(problems)} problems in it")
+        click.echo(f"{session.path} is sound, {len(opened.tables())} tables")
+
+
+@book.command("backup")
+@click.argument("target", type=click.Path(dir_okay=False, path_type=Path))
+@click.pass_obj
+def book_backup(session: Session, target: Path) -> None:
+    """Copy the book to another file while it is open."""
+    with session.open() as opened:
+        written = opened.backup(target)
+        rows = sum(opened.row_count(name) for name in opened.tables())
+    click.echo(f"{written} written, {rows} rows")
+
+
 def main() -> int:
     """Run the cli, turning our own errors into exit codes rather than stacks."""
     try:

@@ -126,3 +126,38 @@ def test_main_returns_zero_on_a_command_that_works(
     target = tmp_path / "day.sqlite3"
     monkeypatch.setattr("sys.argv", ["molycow", "--book", str(target), "book", "init"])
     assert main() == 0
+
+
+def test_verify_says_a_fresh_book_is_sound(runner: CliRunner, tmp_path: Path) -> None:
+    target = tmp_path / "day.sqlite3"
+    runner.invoke(run, ["--book", str(target), "book", "init"])
+    result = runner.invoke(run, ["--book", str(target), "book", "verify"])
+    assert result.exit_code == 0
+    assert "is sound" in result.output
+
+
+def test_verify_reports_a_row_pointing_at_nothing(runner: CliRunner, tmp_path: Path) -> None:
+    target = tmp_path / "day.sqlite3"
+    runner.invoke(run, ["--book", str(target), "book", "init"])
+    with Book.open(target) as opened:
+        opened.execute("PRAGMA foreign_keys = OFF")
+        opened.execute(
+            """
+            INSERT INTO authorized_user
+              (id, customer_id, name, licence, added_on)
+            VALUES ('AU-0001', 'CU-0404', 'R. Okonkwo', '42-28931-01', '2025-01-06')
+            """
+        )
+    result = runner.invoke(run, ["--book", str(target), "book", "verify"])
+    assert result.exit_code != 0
+    assert "points at a missing customer" in result.output
+
+
+def test_a_backup_is_written_and_counted(runner: CliRunner, tmp_path: Path) -> None:
+    target = tmp_path / "day.sqlite3"
+    runner.invoke(run, ["--book", str(target), "book", "init"])
+    copy = tmp_path / "copy.sqlite3"
+    result = runner.invoke(run, ["--book", str(target), "book", "backup", str(copy)])
+    assert result.exit_code == 0
+    assert copy.exists()
+    assert "rows" in result.output
