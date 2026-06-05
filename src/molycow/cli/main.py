@@ -10,6 +10,7 @@ import click
 from molycow import __version__
 from molycow.cli.audit import audit
 from molycow.cli.dose import dose
+from molycow.cli.dosimetry import badge
 from molycow.cli.generator import generator
 from molycow.cli.instrument import instrument
 from molycow.cli.kit import kit
@@ -119,6 +120,7 @@ run.add_command(survey)
 run.add_command(waste)
 run.add_command(report)
 run.add_command(audit)
+run.add_command(badge)
 run.add_command(physician)
 
 

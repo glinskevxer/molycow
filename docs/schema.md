@@ -1,6 +1,6 @@
 # schema
 
-Generated from the migrations. Schema version 20.
+Generated from the migrations. Schema version 21.
 
 ## audit
 
@@ -28,6 +28,15 @@ Generated from the migrations. Schema version 20.
 - `ended_on` TEXT
 - `customer_id` points at `customer.id`
 - indexes: authorized_user_by_customer
+
+## badge_reading
+
+- `person` TEXT (primary key, not null)
+- `period` TEXT (primary key, not null)
+- `deep_mrem` TEXT (not null)
+- `extremity_mrem` TEXT (not null)
+- `read_on` TEXT (not null)
+- indexes: badge_reading_by_period
 
 ## batch
 

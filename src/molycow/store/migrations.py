@@ -437,6 +437,20 @@ CREATE INDEX fridge_reading_by_day ON fridge_reading(read_at);
 """
 
 
+DOSIMETRY = """
+CREATE TABLE badge_reading (
+  person     TEXT NOT NULL,
+  period     TEXT NOT NULL,
+  deep_mrem  TEXT NOT NULL,
+  extremity_mrem TEXT NOT NULL,
+  read_on    TEXT NOT NULL,
+  PRIMARY KEY (person, period)
+);
+
+CREATE INDEX badge_reading_by_period ON badge_reading(period);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -458,6 +472,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(18, "recalls", RECALLS),
     Migration(19, "returns", RETURNS),
     Migration(20, "fridge log", FRIDGE_LOG),
+    Migration(21, "dosimetry", DOSIMETRY),
 )
 
 

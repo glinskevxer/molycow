@@ -66,6 +66,7 @@ The services, and the one job each of them does:
 - `fridge` logs the fridge and stops a cold kit while an excursion is open.
 - `inventory` adds the building up at a moment and holds it to the licence.
 - `recall` pulls a kit lot and walks forward to the hospitals it reached.
+- `dosimetry` keeps the badge readings and adds each person's year up.
 
 ## report
 
