@@ -451,6 +451,25 @@ CREATE INDEX badge_reading_by_period ON badge_reading(period);
 """
 
 
+PACKAGE_RECEIPTS = """
+CREATE TABLE package_receipt (
+  reference    TEXT PRIMARY KEY,
+  supplier     TEXT NOT NULL,
+  received_at  TEXT NOT NULL,
+  surface_mrem TEXT NOT NULL,
+  metre_mrem   TEXT NOT NULL,
+  wipe_dpm     TEXT NOT NULL,
+  received_by  TEXT NOT NULL
+);
+
+CREATE INDEX package_receipt_by_day ON package_receipt(received_at);
+
+ALTER TABLE generator ADD COLUMN package_reference TEXT REFERENCES package_receipt(reference);
+
+CREATE INDEX generator_by_package ON generator(package_reference);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -473,6 +492,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(19, "returns", RETURNS),
     Migration(20, "fridge log", FRIDGE_LOG),
     Migration(21, "dosimetry", DOSIMETRY),
+    Migration(22, "package receipts", PACKAGE_RECEIPTS),
 )
 
 

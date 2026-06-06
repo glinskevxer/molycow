@@ -1,6 +1,6 @@
 # schema
 
-Generated from the migrations. Schema version 21.
+Generated from the migrations. Schema version 22.
 
 ## audit
 
@@ -172,7 +172,9 @@ Generated from the migrations. Schema version 21.
 - `received_on` TEXT (not null)
 - `expires_on` TEXT (not null)
 - `retired_on` TEXT
-- indexes: generator_by_expiry
+- `package_reference` TEXT
+- `package_reference` points at `package_receipt.reference`
+- indexes: generator_by_expiry, generator_by_package
 
 ## instrument
 
@@ -213,6 +215,17 @@ Generated from the migrations. Schema version 21.
 - `checked_by` TEXT (not null)
 - `instrument_id` points at `instrument.id`
 - indexes: linearity_run_by_instrument
+
+## package_receipt
+
+- `reference` TEXT (primary key)
+- `supplier` TEXT (not null)
+- `received_at` TEXT (not null)
+- `surface_mrem` TEXT (not null)
+- `metre_mrem` TEXT (not null)
+- `wipe_dpm` TEXT (not null)
+- `received_by` TEXT (not null)
+- indexes: package_receipt_by_day
 
 ## possession_limit
 

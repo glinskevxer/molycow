@@ -204,3 +204,141 @@ def test_retiring_a_column_takes_it_off_the_in_date_list(runner: CliRunner, book
     call(runner, bookfile, "generator", "retire", "GEN-0001", "--on", "2025-04-10")
     listed = call(runner, bookfile, "generator", "list", "--on", "2025-04-11")
     assert "no columns" in listed.output
+
+
+def test_a_package_is_booked_in_at_the_dock(runner: CliRunner, bookfile: Path) -> None:
+    result = call(
+        runner,
+        bookfile,
+        "generator",
+        "receipt",
+        "COR-88412",
+        "--supplier",
+        "Corren Isotopes",
+        "--at",
+        "2025-04-05 07:20",
+        "--surface",
+        "38",
+        "--metre",
+        "1.4",
+        "--wipe",
+        "140",
+        "--by",
+        "K. Ruzicka",
+    )
+    assert "COR-88412" in result.output
+    assert "clean" in result.output
+
+
+def test_a_failed_package_stops_the_column_going_on_the_bench(
+    runner: CliRunner, bookfile: Path
+) -> None:
+    call(
+        runner,
+        bookfile,
+        "generator",
+        "receipt",
+        "COR-88412",
+        "--supplier",
+        "Corren Isotopes",
+        "--at",
+        "2025-04-05 07:20",
+        "--surface",
+        "38",
+        "--metre",
+        "1.4",
+        "--wipe",
+        "9000",
+        "--by",
+        "K. Ruzicka",
+    )
+    result = call(
+        runner,
+        bookfile,
+        "generator",
+        "receive",
+        "M99-44182",
+        "--maker",
+        "Corren Isotopes",
+        "--activity",
+        "2 Ci",
+        "--calibrated",
+        "2025-04-05 12:00",
+        "--received",
+        "2025-04-05",
+        "--expires",
+        "2025-04-19",
+        "--package",
+        "COR-88412",
+    )
+    assert result.exit_code != 0
+    assert "must not be opened" in str(result.exception)
+
+
+def test_a_clean_package_lets_the_column_through(runner: CliRunner, bookfile: Path) -> None:
+    call(
+        runner,
+        bookfile,
+        "generator",
+        "receipt",
+        "COR-88412",
+        "--supplier",
+        "Corren Isotopes",
+        "--at",
+        "2025-04-05 07:20",
+        "--surface",
+        "38",
+        "--metre",
+        "1.4",
+        "--wipe",
+        "140",
+        "--by",
+        "K. Ruzicka",
+    )
+    result = call(
+        runner,
+        bookfile,
+        "generator",
+        "receive",
+        "M99-44182",
+        "--maker",
+        "Corren Isotopes",
+        "--activity",
+        "2 Ci",
+        "--calibrated",
+        "2025-04-05 12:00",
+        "--received",
+        "2025-04-05",
+        "--expires",
+        "2025-04-19",
+        "--package",
+        "COR-88412",
+    )
+    assert result.exit_code == 0
+    assert "GEN-0001" in result.output
+
+
+def test_the_receipts_list_shows_the_days_packages(runner: CliRunner, bookfile: Path) -> None:
+    call(
+        runner,
+        bookfile,
+        "generator",
+        "receipt",
+        "COR-88412",
+        "--supplier",
+        "Corren Isotopes",
+        "--at",
+        "2025-04-05 07:20",
+        "--surface",
+        "38",
+        "--metre",
+        "1.4",
+        "--wipe",
+        "140",
+        "--by",
+        "K. Ruzicka",
+    )
+    assert (
+        "COR-88412" in call(runner, bookfile, "generator", "receipts", "--on", "2025-04-05").output
+    )
+    assert "nothing to report" in call(runner, bookfile, "generator", "receipts").output
