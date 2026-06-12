@@ -1,6 +1,6 @@
 # schema
 
-Generated from the migrations. Schema version 22.
+Generated from the migrations. Schema version 23.
 
 ## audit
 
@@ -108,9 +108,10 @@ Generated from the migrations. Schema version 22.
 - `calibration_at` TEXT (not null)
 - `ordered_at` TEXT (not null)
 - `state` TEXT (not null)
+- `priority` TEXT (not null)
 - `user_id` points at `authorized_user.id`
 - `customer_id` points at `customer.id`
-- indexes: customer_order_by_calibration, customer_order_by_customer, customer_order_by_state, customer_order_by_user
+- indexes: customer_order_by_calibration, customer_order_by_customer, customer_order_by_priority, customer_order_by_state, customer_order_by_user
 
 ## dose
 

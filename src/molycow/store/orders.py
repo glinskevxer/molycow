@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
 from molycow.ids import Kind, make, next_serial
-from molycow.model.order import Order, OrderState
+from molycow.model.order import Order, OrderState, Priority
 from molycow.store.records import Records
 from molycow.store.rows import activity_in, activity_out, moment_in, moment_out, text_in
 
@@ -30,6 +30,7 @@ def order_from(row: sqlite3.Row) -> Order:
         calibration_at=moment_in(row["calibration_at"], "calibration_at"),
         ordered_at=moment_in(row["ordered_at"], "ordered_at"),
         state=OrderState(text_in(row, "state")),
+        priority=Priority(text_in(row, "priority")),
     )
 
 
@@ -41,8 +42,8 @@ class OrderRepository(Records):
             """
             INSERT INTO customer_order
               (id, customer_id, user_id, code, procedure, patient_ref,
-               activity, calibration_at, ordered_at, state)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               activity, calibration_at, ordered_at, state, priority)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 order.id,
@@ -55,6 +56,7 @@ class OrderRepository(Records):
                 moment_out(order.calibration_at),
                 moment_out(order.ordered_at),
                 order.state.value,
+                order.priority.value,
             ),
         )
         return order
@@ -101,6 +103,18 @@ class OrderRepository(Records):
             ORDER BY calibration_at, id
             """,
             (moment_out(start), moment_out(end)),
+        )
+        return [order_from(row) for row in rows]
+
+    def stat_orders(self) -> list[Order]:
+        """The open stat orders, soonest first."""
+        rows = self._book.all(
+            """
+            SELECT * FROM customer_order
+            WHERE priority = ? AND state = ?
+            ORDER BY calibration_at, id
+            """,
+            (Priority.STAT.value, OrderState.OPEN.value),
         )
         return [order_from(row) for row in rows]
 

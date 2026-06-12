@@ -96,3 +96,33 @@ def test_the_ids_have_to_be_the_right_kinds() -> None:
 def test_a_kit_the_pharmacy_does_not_compound_is_refused_on_an_order() -> None:
     with pytest.raises(ValidationError, match="does not compound"):
         an_order(code="HIDA")
+
+
+def test_a_routine_order_needs_an_hour_of_notice() -> None:
+    from molycow.model.order import Priority
+
+    with pytest.raises(ValidationError, match="mark it stat"):
+        an_order(ordered_at=at("2025-04-08 07:40"))
+    rushed = an_order(ordered_at=at("2025-04-08 07:40"), priority=Priority.STAT)
+    assert rushed.is_stat
+    assert rushed.priority.notice_hours == Decimal(0)
+
+
+def test_a_stat_order_sorts_ahead_of_a_routine_one() -> None:
+    from molycow.model.order import Priority
+
+    routine = an_order()
+    rushed = an_order(
+        id="ORD-250407-12",
+        calibration_at=at("2025-04-08 15:00"),
+        priority=Priority.STAT,
+    )
+    ordered = sorted([routine, rushed], key=lambda one: one.queue_key)
+    assert [one.id for one in ordered] == ["ORD-250407-12", "ORD-250407-11"]
+
+
+def test_a_finished_stat_order_keeps_its_priority() -> None:
+    from molycow.model.order import Priority
+
+    rushed = an_order(priority=Priority.STAT).filled()
+    assert rushed.is_stat

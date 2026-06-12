@@ -25,6 +25,23 @@ from molycow.units import Activity
 MAX_LEAD_HOURS = Decimal(72)
 
 
+class Priority(Enum):
+    """How far up the worklist an order sits."""
+
+    ROUTINE = "routine"
+    STAT = "stat"
+
+    @property
+    def jumps_the_queue(self) -> bool:
+        """Whether it is worked before anything routine, whatever the clock says."""
+        return self is Priority.STAT
+
+    @property
+    def notice_hours(self) -> Decimal:
+        """The least notice this sort of order is normally given."""
+        return Decimal(0) if self is Priority.STAT else Decimal(1)
+
+
 class OrderState(Enum):
     """Where an order has got to."""
 
@@ -51,6 +68,7 @@ class Order:
     calibration_at: dt.datetime
     ordered_at: dt.datetime
     state: OrderState = OrderState.OPEN
+    priority: Priority = Priority.ROUTINE
 
     def __post_init__(self) -> None:
         expect(self.id, Kind.ORDER)
@@ -68,6 +86,12 @@ class Order:
                 "that calibration time has already gone by",
                 id=self.id,
                 calibration_at=self.calibration_at.isoformat(),
+            )
+        if self.lead_hours < self.priority.notice_hours:
+            raise ValidationError(
+                "a routine order needs an hour of notice, mark it stat",
+                id=self.id,
+                hours=str(self.lead_hours),
             )
         if hours_between(self.ordered_at, self.calibration_at) > MAX_LEAD_HOURS:
             raise ValidationError(
@@ -91,6 +115,15 @@ class Order:
 
     def is_open(self) -> bool:
         return self.state is OrderState.OPEN
+
+    @property
+    def is_stat(self) -> bool:
+        return self.priority.jumps_the_queue
+
+    @property
+    def queue_key(self) -> tuple[int, dt.datetime]:
+        """What the worklist sorts on: stat first, then by calibration time."""
+        return (0 if self.is_stat else 1, self.calibration_at)
 
     def hours_to_calibration(self, at: dt.datetime) -> Decimal:
         return hours_between(at, self.calibration_at)
@@ -118,6 +151,7 @@ class Order:
             calibration_at=self.calibration_at,
             ordered_at=self.ordered_at,
             state=state,
+            priority=self.priority,
         )
 
     def filled(self) -> Order:

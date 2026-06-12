@@ -470,6 +470,13 @@ CREATE INDEX generator_by_package ON generator(package_reference);
 """
 
 
+ORDER_PRIORITY = """
+ALTER TABLE customer_order ADD COLUMN priority TEXT NOT NULL DEFAULT 'routine';
+
+CREATE INDEX customer_order_by_priority ON customer_order(priority, calibration_at);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "core register", CORE_REGISTER),
     Migration(2, "generator bench", GENERATOR_BENCH),
@@ -493,6 +500,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(20, "fridge log", FRIDGE_LOG),
     Migration(21, "dosimetry", DOSIMETRY),
     Migration(22, "package receipts", PACKAGE_RECEIPTS),
+    Migration(23, "order priority", ORDER_PRIORITY),
 )
 
 

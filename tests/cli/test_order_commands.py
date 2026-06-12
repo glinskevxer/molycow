@@ -187,3 +187,77 @@ def test_cancelling_twice_is_refused(runner: CliRunner, bookfile: Path) -> None:
     again = call(runner, bookfile, "order", "cancel", "ORD-250407-01")
     assert again.exit_code != 0
     assert "already been finished" in str(again.exception)
+
+
+def test_a_stat_order_is_marked_on_the_worklist(runner: CliRunner, bookfile: Path) -> None:
+    call(
+        runner,
+        bookfile,
+        "order",
+        "take",
+        "CU-0001",
+        "AU-0001",
+        "--code",
+        "MDP",
+        "--procedure",
+        "lung scan",
+        "--ref",
+        "A-4471999",
+        "--activity",
+        "22 mCi",
+        "--calibration",
+        "2025-04-08 15:00",
+        "--at",
+        "2025-04-07 16:10",
+        "--stat",
+    )
+    take(runner, bookfile)
+    worklist = call(runner, bookfile, "order", "worklist", "--at", "2025-04-08 06:30")
+    assert worklist.output.splitlines()[0].startswith("STAT")
+
+
+def test_an_order_with_no_notice_has_to_be_marked_stat(runner: CliRunner, bookfile: Path) -> None:
+    refused = call(
+        runner,
+        bookfile,
+        "order",
+        "take",
+        "CU-0001",
+        "AU-0001",
+        "--code",
+        "MDP",
+        "--procedure",
+        "lung scan",
+        "--ref",
+        "A-4471999",
+        "--activity",
+        "22 mCi",
+        "--calibration",
+        "2025-04-08 09:00",
+        "--at",
+        "2025-04-08 08:40",
+    )
+    assert refused.exit_code != 0
+    assert "mark it stat" in str(refused.exception)
+    taken = call(
+        runner,
+        bookfile,
+        "order",
+        "take",
+        "CU-0001",
+        "AU-0001",
+        "--code",
+        "MDP",
+        "--procedure",
+        "lung scan",
+        "--ref",
+        "A-4471999",
+        "--activity",
+        "22 mCi",
+        "--calibration",
+        "2025-04-08 09:00",
+        "--at",
+        "2025-04-08 08:40",
+        "--stat",
+    )
+    assert taken.exit_code == 0

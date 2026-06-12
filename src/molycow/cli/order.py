@@ -7,6 +7,7 @@ import click
 from molycow.cli.session import Session
 from molycow.clock import parse_day, parse_moment, stamp
 from molycow.formulary import codes
+from molycow.model.order import Priority
 from molycow.service.orders import OrderService
 from molycow.store.orders import OrderRepository
 from molycow.units import Activity
@@ -26,6 +27,7 @@ def order() -> None:
 @click.option("--activity", required=True, help="what it must read at the calibration time")
 @click.option("--calibration", required=True, help="when the department will inject it")
 @click.option("--at", "ordered_at", required=True, help="when the order came in")
+@click.option("--stat", is_flag=True, help="work it before anything routine")
 @click.pass_obj
 def order_take(
     session: Session,
@@ -37,6 +39,7 @@ def order_take(
     activity: str,
     calibration: str,
     ordered_at: str,
+    stat: bool,
 ) -> None:
     """Take an order, if the licence and the physician allow it."""
     with session.open() as book:
@@ -49,6 +52,7 @@ def order_take(
             activity=Activity.parse(activity),
             calibration_at=parse_moment(calibration, session.tz),
             ordered_at=parse_moment(ordered_at, session.tz),
+            priority=Priority.STAT if stat else Priority.ROUTINE,
         )
         click.echo(
             f"{taken.id} {taken.customer_id} {taken.code} "
@@ -132,8 +136,9 @@ def order_worklist(session: Session, moment: str, hours: int) -> None:
             click.echo("nothing due")
             return
         for one in found:
+            mark = "STAT " if one.is_stat else "     "
             click.echo(
-                f"{stamp(one.calibration_at, session.tz)}  {one.id}  {one.customer_id}  "
+                f"{mark}{stamp(one.calibration_at, session.tz)}  {one.id}  {one.customer_id}  "
                 f"{one.code:7} {one.activity.format('mci', 1)}  {one.procedure}"
             )
 

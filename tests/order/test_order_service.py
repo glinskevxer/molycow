@@ -147,3 +147,35 @@ def test_an_order_still_open_after_its_time_shows_as_late(book: Book) -> None:
     order = take(service)
     assert service.late(at("2025-04-08 07:00")) == []
     assert [one.id for one in service.late(at("2025-04-08 09:00"))] == [order.id]  # type: ignore[attr-defined]
+
+
+def test_a_stat_order_is_at_the_top_of_the_worklist(book: Book) -> None:
+    from molycow.model.order import Priority
+
+    a_register(book)
+    service = OrderService(book)
+    take(service, calibration_at=at("2025-04-08 09:00"))
+    take(service, calibration_at=at("2025-04-08 15:00"), priority=Priority.STAT)
+    worklist = service.worklist(at("2025-04-08 06:30"), hours=4)
+    assert [one.is_stat for one in worklist] == [True, False]
+
+
+def test_a_stat_order_outside_the_window_still_shows(book: Book) -> None:
+    from molycow.model.order import Priority
+
+    a_register(book)
+    service = OrderService(book)
+    take(service, calibration_at=at("2025-04-08 20:00"), priority=Priority.STAT)
+    worklist = service.worklist(at("2025-04-08 06:30"), hours=2)
+    assert len(worklist) == 1
+    assert worklist[0].is_stat
+
+
+def test_a_filled_stat_order_leaves_the_worklist(book: Book) -> None:
+    from molycow.model.order import Priority
+
+    a_register(book)
+    service = OrderService(book)
+    order = take(service, calibration_at=at("2025-04-08 20:00"), priority=Priority.STAT)
+    service.cancel(order.id)  # type: ignore[attr-defined]
+    assert service.worklist(at("2025-04-08 06:30"), hours=2) == []

@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 from molycow.clock import day_of, zone
 from molycow.errors import RuleError
 from molycow.formulary import formula
-from molycow.model.order import Order, OrderState
+from molycow.model.order import Order, OrderState, Priority
 from molycow.store.audit import AuditRepository
 from molycow.store.book import Book
 from molycow.store.orders import OrderRepository
@@ -79,6 +79,7 @@ class OrderService:
         activity: Activity,
         calibration_at: dt.datetime,
         ordered_at: dt.datetime,
+        priority: Priority = Priority.ROUTINE,
     ) -> Order:
         """Write an order into the book."""
         refused = self.refusal_for(customer_id, user_id, code, activity, calibration_at)
@@ -94,6 +95,7 @@ class OrderService:
             activity=activity,
             calibration_at=calibration_at,
             ordered_at=ordered_at,
+            priority=priority,
         )
         with self._book.atomic():
             self._orders.add(order)
@@ -116,9 +118,16 @@ class OrderService:
         return [one for one in self._orders.due_on(day, self._tz) if one.is_open()]
 
     def worklist(self, at: dt.datetime, hours: int = 4) -> list[Order]:
-        """Open orders calibrated inside the next few hours, soonest first."""
+        """Open orders to work now: stat first, then the next few hours by time.
+
+        A stat order is on the list whether or not its calibration time falls
+        inside the window, because the point of marking one stat is that it
+        does not wait for the window to come round.
+        """
         window = at + dt.timedelta(hours=hours)
-        return [one for one in self._orders.due_between(at, window) if one.state is OrderState.OPEN]
+        due = [one for one in self._orders.due_between(at, window) if one.state is OrderState.OPEN]
+        waiting = [one for one in self._orders.stat_orders() if one not in due]
+        return sorted([*due, *waiting], key=lambda one: one.queue_key)
 
     def late(self, at: dt.datetime) -> list[Order]:
         return self._orders.late_at(at)
