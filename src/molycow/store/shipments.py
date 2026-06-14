@@ -6,7 +6,7 @@ import datetime as dt
 from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
-from molycow.ids import Kind, make, next_serial
+from molycow.ids import Kind
 from molycow.model.shipment import Shipment
 from molycow.store.records import Records
 from molycow.store.rows import (
@@ -20,6 +20,7 @@ from molycow.store.rows import (
     moment_out,
     text_in,
 )
+from molycow.store.serials import next_id
 
 
 class ShipmentRepository(Records):
@@ -110,5 +111,4 @@ class ShipmentRepository(Records):
         return signed
 
     def next_id(self, day: dt.date) -> str:
-        issued = [str(row["id"]) for row in self._book.all("SELECT id FROM shipment")]
-        return make(Kind.SHIPMENT, next_serial(issued, Kind.SHIPMENT, day), day)
+        return next_id(self._book, Kind.SHIPMENT, day)

@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
 from molycow.errors import NotFoundError
-from molycow.ids import Kind, make, next_serial
+from molycow.ids import Kind
 from molycow.model.instrument import CheckSource, Instrument, InstrumentKind
 from molycow.model.qc import CheckKind, LinearityPoint, LinearityRun, QcCheck
 from molycow.store.records import Records
@@ -22,6 +22,7 @@ from molycow.store.rows import (
     moment_out,
     text_in,
 )
+from molycow.store.serials import next_id
 
 
 def instrument_from(row: sqlite3.Row) -> Instrument:
@@ -120,8 +121,7 @@ class InstrumentRepository(Records):
         )
 
     def next_id(self) -> str:
-        issued = [str(row["id"]) for row in self._book.all("SELECT id FROM instrument")]
-        return make(Kind.INSTRUMENT, next_serial(issued, Kind.INSTRUMENT))
+        return next_id(self._book, Kind.INSTRUMENT)
 
 
 class CheckSourceRepository(Records):

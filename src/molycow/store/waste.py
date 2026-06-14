@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as dt
 from decimal import Decimal
 
-from molycow.ids import Kind, make, next_serial
+from molycow.ids import Kind
 from molycow.model.waste import Container, ContainerKind, WasteItem
 from molycow.store.records import Records
 from molycow.store.rows import (
@@ -19,6 +19,7 @@ from molycow.store.rows import (
     moment_out,
     text_in,
 )
+from molycow.store.serials import next_id
 
 
 class ContainerRepository(Records):
@@ -150,5 +151,4 @@ class ContainerRepository(Records):
         return None if row is None else maybe_text_in(row, "disposed_by")
 
     def next_id(self) -> str:
-        issued = [str(row["id"]) for row in self._book.all("SELECT id FROM container")]
-        return make(Kind.CONTAINER, next_serial(issued, Kind.CONTAINER))
+        return next_id(self._book, Kind.CONTAINER)

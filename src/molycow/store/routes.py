@@ -6,10 +6,11 @@ import datetime as dt
 
 from molycow.clock import parse_clock
 from molycow.errors import NotFoundError
-from molycow.ids import Kind, make, next_serial
+from molycow.ids import Kind
 from molycow.model.route import Route, Run
 from molycow.store.records import Records
 from molycow.store.rows import date_in, date_out, maybe_moment_in, moment_out, text_in
+from molycow.store.serials import next_id
 
 
 class RouteRepository(Records):
@@ -61,8 +62,7 @@ class RouteRepository(Records):
         return [one for one in self.all() if one.calls_at(customer_id)]
 
     def next_id(self) -> str:
-        issued = [str(row["id"]) for row in self._book.all("SELECT id FROM route")]
-        return make(Kind.ROUTE, next_serial(issued, Kind.ROUTE))
+        return next_id(self._book, Kind.ROUTE)
 
 
 class RunRepository(Records):

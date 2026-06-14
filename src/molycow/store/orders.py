@@ -11,10 +11,11 @@ import sqlite3
 from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
-from molycow.ids import Kind, make, next_serial
+from molycow.ids import Kind
 from molycow.model.order import Order, OrderState, Priority
 from molycow.store.records import Records
 from molycow.store.rows import activity_in, activity_out, moment_in, moment_out, text_in
+from molycow.store.serials import next_id
 
 
 def order_from(row: sqlite3.Row) -> Order:
@@ -130,8 +131,7 @@ class OrderRepository(Records):
         return order
 
     def next_id(self, day: dt.date) -> str:
-        issued = [str(row["id"]) for row in self._book.all("SELECT id FROM customer_order")]
-        return make(Kind.ORDER, next_serial(issued, Kind.ORDER, day), day)
+        return next_id(self._book, Kind.ORDER, day)
 
     def count(self, state: OrderState | None = None) -> int:
         if state is None:

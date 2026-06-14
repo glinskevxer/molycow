@@ -7,7 +7,7 @@ import sqlite3
 from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
-from molycow.ids import Kind, make, next_serial
+from molycow.ids import Kind
 from molycow.model.generator import Elution, Generator
 from molycow.store.records import Records
 from molycow.store.rows import (
@@ -22,6 +22,7 @@ from molycow.store.rows import (
     volume_in,
     volume_out,
 )
+from molycow.store.serials import next_id
 
 
 def generator_from(row: sqlite3.Row) -> Generator:
@@ -111,8 +112,7 @@ class GeneratorRepository(Records):
         )
 
     def next_id(self) -> str:
-        issued = [str(row["id"]) for row in self._book.all("SELECT id FROM generator")]
-        return make(Kind.GENERATOR, next_serial(issued, Kind.GENERATOR))
+        return next_id(self._book, Kind.GENERATOR)
 
 
 class ElutionRepository(Records):
@@ -170,8 +170,7 @@ class ElutionRepository(Records):
 
     def next_id(self, day: dt.date) -> str:
         """The next elution number for a day, which restarts every morning."""
-        issued = [str(row["id"]) for row in self._book.all("SELECT id FROM elution")]
-        return make(Kind.ELUTION, next_serial(issued, Kind.ELUTION, day), day)
+        return next_id(self._book, Kind.ELUTION, day)
 
     def count_for(self, generator_id: str) -> int:
         value = self._book.value(

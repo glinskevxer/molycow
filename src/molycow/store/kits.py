@@ -8,7 +8,7 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
-from molycow.ids import Kind, make, next_serial
+from molycow.ids import Kind
 from molycow.model.kit import Batch, KitLot
 from molycow.store.records import Records
 from molycow.store.rows import (
@@ -26,6 +26,7 @@ from molycow.store.rows import (
     volume_in,
     volume_out,
 )
+from molycow.store.serials import next_id
 
 
 def kit_lot_from(row: sqlite3.Row) -> KitLot:
@@ -122,8 +123,7 @@ class KitLotRepository(Records):
         return [one for one in self.all() if one.is_recalled]
 
     def next_id(self) -> str:
-        issued = [str(row["id"]) for row in self._book.all("SELECT id FROM kit_lot")]
-        return make(Kind.KIT_LOT, next_serial(issued, Kind.KIT_LOT))
+        return next_id(self._book, Kind.KIT_LOT)
 
     def count(self) -> int:
         return int(self._book.value("SELECT count(*) FROM kit_lot") or 0)
@@ -200,5 +200,4 @@ class BatchRepository(Records):
         return [one for one in self.all() if not one.is_tested]
 
     def next_id(self, day: dt.date) -> str:
-        issued = [str(row["id"]) for row in self._book.all("SELECT id FROM batch")]
-        return make(Kind.BATCH, next_serial(issued, Kind.BATCH, day), day)
+        return next_id(self._book, Kind.BATCH, day)

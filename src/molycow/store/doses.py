@@ -7,7 +7,7 @@ import sqlite3
 from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
-from molycow.ids import Kind, make, next_serial
+from molycow.ids import Kind
 from molycow.model.dose import Dose
 from molycow.store.records import Records
 from molycow.store.rows import (
@@ -20,6 +20,7 @@ from molycow.store.rows import (
     volume_in,
     volume_out,
 )
+from molycow.store.serials import next_id
 
 
 def dose_from(row: sqlite3.Row) -> Dose:
@@ -91,8 +92,7 @@ class DoseRepository(Records):
         return [one for one in self.all() if day_of(one.drawn_at, where) == day]
 
     def next_id(self, day: dt.date) -> str:
-        issued = [str(row["id"]) for row in self._book.all("SELECT id FROM dose")]
-        return make(Kind.DOSE, next_serial(issued, Kind.DOSE, day), day)
+        return next_id(self._book, Kind.DOSE, day)
 
     def count_on(self, day: dt.date, tz: ZoneInfo | None = None) -> int:
         return len(self.on_day(day, tz))

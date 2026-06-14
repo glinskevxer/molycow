@@ -7,10 +7,11 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from molycow.clock import day_of, zone
-from molycow.ids import Kind, make, next_serial
+from molycow.ids import Kind
 from molycow.model.survey import Area, DoseRate, Survey, Wipe
 from molycow.store.records import Records
 from molycow.store.rows import decimal_in, decimal_out, moment_in, moment_out, text_in
+from molycow.store.serials import next_id
 
 
 class SurveyRepository(Records):
@@ -98,8 +99,7 @@ class SurveyRepository(Records):
         return [one for one in found if not one.passes(limit)]
 
     def next_id(self, day: dt.date) -> str:
-        issued = [str(row["id"]) for row in self._book.all("SELECT id FROM survey")]
-        return make(Kind.SURVEY, next_serial(issued, Kind.SURVEY, day), day)
+        return next_id(self._book, Kind.SURVEY, day)
 
     def count(self) -> int:
         return int(self._book.value("SELECT count(*) FROM survey") or 0)
