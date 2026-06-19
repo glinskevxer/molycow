@@ -105,3 +105,12 @@ def test_a_period_between_two_days_prints(runner: CliRunner, bookfile: Path) -> 
         runner, bookfile, "report", "period", "--from", "2025-04-01", "--to", "2025-04-30"
     )
     assert "1 doses" in result.output
+
+
+def test_a_customer_statement_prints(runner: CliRunner, bookfile: Path) -> None:
+    result = call(
+        runner, bookfile, "report", "statement", "CU-0001", "--year", "2025", "--month", "4"
+    )
+    assert "statement Saint Brannon" in result.output
+    assert "orders" in result.output
+    assert "1 filled" in result.output

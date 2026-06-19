@@ -11,6 +11,7 @@ from molycow.clock import parse_day, parse_moment
 from molycow.report.daysheet import day_sheet
 from molycow.report.export import export_day
 from molycow.report.period import Period, month, period_sheet
+from molycow.report.statement import statement
 from molycow.service.inventory import InventoryService
 from molycow.store.licence import LicenceRepository
 
@@ -125,3 +126,14 @@ def report_export(session: Session, folder: Path, on_day: str) -> None:
         for one in written:
             click.echo(one.line())
         click.echo(f"{sum(one.rows for one in written)} rows into {folder}")
+
+
+@report.command("statement")
+@click.argument("customer_id")
+@click.option("--year", type=int, required=True)
+@click.option("--month", "number", type=int, required=True)
+@click.pass_obj
+def report_statement(session: Session, customer_id: str, year: int, number: int) -> None:
+    """One customer's month, as their own office asks for it."""
+    with session.open() as book:
+        click.echo(statement(book, customer_id, month(year, number), session.tz).text())
