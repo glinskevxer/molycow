@@ -161,3 +161,30 @@ def test_a_backup_is_written_and_counted(runner: CliRunner, tmp_path: Path) -> N
     assert result.exit_code == 0
     assert copy.exists()
     assert "rows" in result.output
+
+
+def test_the_laws_command_lists_every_rule(runner: CliRunner, tmp_path: Path) -> None:
+    target = tmp_path / "day.sqlite3"
+    runner.invoke(run, ["--book", str(target), "book", "init"])
+    result = runner.invoke(run, ["--book", str(target), "book", "laws"])
+    assert result.exit_code == 0
+    assert "eluate-untested" in result.output
+    assert "rules" in result.output.splitlines()[-1]
+
+
+def test_the_laws_can_be_narrowed_to_one_subject(runner: CliRunner, tmp_path: Path) -> None:
+    target = tmp_path / "day.sqlite3"
+    runner.invoke(run, ["--book", str(target), "book", "init"])
+    result = runner.invoke(run, ["--book", str(target), "book", "laws", "--about", "routes"])
+    assert "van-index" in result.output
+    assert "eluate-untested" not in result.output
+
+
+def test_a_subject_nobody_has_rules_about_lists_the_ones_that_exist(
+    runner: CliRunner, tmp_path: Path
+) -> None:
+    target = tmp_path / "day.sqlite3"
+    runner.invoke(run, ["--book", str(target), "book", "init"])
+    result = runner.invoke(run, ["--book", str(target), "book", "laws", "--about", "gossip"])
+    assert result.exit_code != 0
+    assert "try one of" in result.output

@@ -24,6 +24,7 @@ from molycow.cli.survey import survey
 from molycow.cli.waste import waste
 from molycow.clock import DEFAULT_ZONE
 from molycow.errors import MolycowError
+from molycow.rules import about, rules, subjects
 from molycow.store.migrations import apply, latest, pending, schema_version
 
 
@@ -146,6 +147,19 @@ def book_backup(session: Session, target: Path) -> None:
         written = opened.backup(target)
         rows = sum(opened.row_count(name) for name in opened.tables())
     click.echo(f"{written} written, {rows} rows")
+
+
+@book.command("laws")
+@click.option("--about", "subject", default=None, help="only the rules about one thing")
+@click.pass_obj
+def book_laws(session: Session, subject: str | None) -> None:
+    """The rules this package refuses on, and what each one says."""
+    if subject is not None and subject not in subjects():
+        raise click.BadParameter(f"try one of: {', '.join(subjects())}")
+    found = about(subject) if subject else rules()
+    for rule in found:
+        click.echo(rule.line())
+    click.echo(f"{len(found)} rules, {session.path}")
 
 
 def main() -> int:
