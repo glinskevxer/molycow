@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import click
 
+from molycow.cli.options import at_option, on_option
 from molycow.cli.session import Session
 from molycow.clock import parse_clock, parse_day, parse_moment, stamp
 from molycow.model.route import Route
@@ -63,7 +64,7 @@ def route_list(session: Session, zone_name: str | None) -> None:
 
 @route.command("open")
 @click.argument("route_id")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.option("--driver", required=True)
 @click.pass_obj
 def route_open(session: Session, route_id: str, on_day: str, driver: str) -> None:
@@ -90,7 +91,7 @@ def route_waiting(session: Session, route_id: str) -> None:
 @route.command("load")
 @click.argument("route_id")
 @click.argument("shipment_id")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.pass_obj
 def route_load(session: Session, route_id: str, shipment_id: str, on_day: str) -> None:
     """Put a box on a run."""
@@ -104,8 +105,8 @@ def route_load(session: Session, route_id: str, shipment_id: str, on_day: str) -
 
 @route.command("depart")
 @click.argument("route_id")
-@click.option("--on", "on_day", required=True)
-@click.option("--at", "moment", required=True)
+@on_option()
+@at_option()
 @click.pass_obj
 def route_depart(session: Session, route_id: str, on_day: str, moment: str) -> None:
     """Send the van out."""
@@ -120,8 +121,8 @@ def route_depart(session: Session, route_id: str, on_day: str, moment: str) -> N
 @route.command("deliver")
 @click.argument("route_id")
 @click.argument("shipment_id")
-@click.option("--on", "on_day", required=True)
-@click.option("--at", "moment", required=True)
+@on_option()
+@at_option()
 @click.option("--to", "received_by", required=True)
 @click.pass_obj
 def route_deliver(
@@ -146,8 +147,8 @@ def route_deliver(
 
 @route.command("back")
 @click.argument("route_id")
-@click.option("--on", "on_day", required=True)
-@click.option("--at", "moment", required=True)
+@on_option()
+@at_option()
 @click.pass_obj
 def route_back(session: Session, route_id: str, on_day: str, moment: str) -> None:
     """Book the van back in, and say what came back with it."""

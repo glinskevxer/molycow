@@ -6,6 +6,7 @@ from decimal import Decimal
 
 import click
 
+from molycow.cli.options import at_option, on_option
 from molycow.cli.session import Session
 from molycow.clock import parse_day, parse_moment, stamp
 from molycow.model.dose import TOLERANCE_PERCENT
@@ -23,7 +24,7 @@ def dose() -> None:
 @dose.command("plan")
 @click.argument("order_id")
 @click.argument("batch_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.pass_obj
 def dose_plan(session: Session, order_id: str, batch_id: str, moment: str) -> None:
     """Work out the draw without filling anything."""
@@ -40,7 +41,7 @@ def dose_plan(session: Session, order_id: str, batch_id: str, moment: str) -> No
 
 @dose.command("batches")
 @click.argument("order_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.pass_obj
 def dose_batches(session: Session, order_id: str, moment: str) -> None:
     """Which batches on the bench could fill an order."""
@@ -60,7 +61,7 @@ def dose_batches(session: Session, order_id: str, moment: str) -> None:
 @dose.command("draw")
 @click.argument("order_id")
 @click.argument("batch_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--assay", required=True, help="what the calibrator read on the syringe")
 @click.option("--by", "drawn_by", required=True)
 @click.option("--calibrator", "calibrator_id", required=True)
@@ -116,7 +117,7 @@ def dose_label(session: Session, dose_id: str) -> None:
 
 
 @dose.command("list")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.pass_obj
 def dose_list(session: Session, on_day: str) -> None:
     """The syringes drawn on a day."""

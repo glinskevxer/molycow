@@ -6,6 +6,7 @@ from decimal import Decimal
 
 import click
 
+from molycow.cli.options import at_option, on_option, on_option_maybe
 from molycow.cli.session import Session
 from molycow.clock import day_of, parse_day, parse_moment, stamp
 from molycow.formulary import codes, formula, known
@@ -73,7 +74,7 @@ def kit_add(
 
 @kit.command("shelf")
 @click.option("--code", default=None, help="only this kit")
-@click.option("--on", "on_day", default=None, help="only the lots in date that day")
+@on_option_maybe("only the lots in date that day")
 @click.pass_obj
 def kit_shelf(session: Session, code: str | None, on_day: str | None) -> None:
     """What is on the kit shelf."""
@@ -96,7 +97,7 @@ def kit_shelf(session: Session, code: str | None, on_day: str | None) -> None:
 @kit.command("plan")
 @click.argument("code", type=click.Choice(codes()))
 @click.argument("elution_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--activity", required=True)
 @click.option("--volume", default=None, help="what the vial is made up to")
 @click.pass_obj
@@ -128,7 +129,7 @@ def kit_plan(
 @kit.command("compound")
 @click.argument("code", type=click.Choice(codes()))
 @click.argument("elution_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--activity", required=True)
 @click.option("--volume", default=None)
 @click.option("--by", "made_by", required=True)
@@ -161,7 +162,7 @@ def kit_compound(
 
 @kit.command("strips")
 @click.argument("batch_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--solvent", nargs=2, type=int, required=True, help="origin and front counts")
 @click.option("--saline", nargs=2, type=int, required=True, help="origin and front counts")
 @click.option("--background", type=int, default=0)
@@ -189,7 +190,7 @@ def kit_strips(
 
 
 @kit.command("bench")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--code", default=None)
 @click.pass_obj
 def kit_bench(session: Session, moment: str, code: str | None) -> None:
@@ -214,7 +215,7 @@ def kit_bench(session: Session, moment: str, code: str | None) -> None:
 
 
 @kit.command("day")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.pass_obj
 def kit_day(session: Session, on_day: str) -> None:
     """Everything compounded on a day."""
@@ -237,7 +238,7 @@ def kit_day(session: Session, on_day: str) -> None:
 
 @kit.command("recall")
 @click.argument("lot_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--why", "reason", required=True, help="what the maker found")
 @click.option("--by", "recalled_by", required=True)
 @click.pass_obj
@@ -276,7 +277,7 @@ def kit_recalled(session: Session) -> None:
 
 
 @kit.command("fridge")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--celsius", required=True, help="what the thermometer read")
 @click.option("--by", "read_by", required=True)
 @click.pass_obj
@@ -290,7 +291,7 @@ def kit_fridge(session: Session, moment: str, celsius: str, read_by: str) -> Non
 
 
 @kit.command("fridge-log")
-@click.option("--on", "on_day", default=None)
+@on_option_maybe()
 @click.pass_obj
 def kit_fridge_log(session: Session, on_day: str | None) -> None:
     """The fridge readings, and anything still open against them."""
@@ -312,7 +313,7 @@ def kit_fridge_log(session: Session, on_day: str | None) -> None:
 
 @kit.command("fridge-review")
 @click.option("--reading", "read_at", required=True, help="the moment of the reading")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--by", "reviewed_by", required=True)
 @click.pass_obj
 def kit_fridge_review(session: Session, read_at: str, moment: str, reviewed_by: str) -> None:

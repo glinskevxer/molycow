@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import click
 
+from molycow.cli.options import at_option, on_option_maybe
 from molycow.cli.session import Session
 from molycow.clock import parse_day, parse_moment, stamp
 from molycow.formulary import codes
@@ -91,7 +92,7 @@ def order_check(
 
 
 @order.command("list")
-@click.option("--on", "on_day", default=None, help="the orders calibrated that day")
+@on_option_maybe("the orders calibrated that day")
 @click.option("--customer", "customer_id", default=None)
 @click.option("--open", "open_only", is_flag=True, help="only the ones still to fill")
 @click.pass_obj
@@ -125,7 +126,7 @@ def order_list(
 
 
 @order.command("worklist")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--hours", type=int, default=4, show_default=True)
 @click.pass_obj
 def order_worklist(session: Session, moment: str, hours: int) -> None:
@@ -144,7 +145,7 @@ def order_worklist(session: Session, moment: str, hours: int) -> None:
 
 
 @order.command("late")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.pass_obj
 def order_late(session: Session, moment: str) -> None:
     """Orders whose calibration time has gone by with nothing drawn."""

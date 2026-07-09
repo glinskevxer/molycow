@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 
+from molycow.cli.options import at_option, on_option
 from molycow.cli.session import Session
 from molycow.clock import parse_day, parse_moment
 from molycow.report.daysheet import day_sheet
@@ -22,7 +23,7 @@ def report() -> None:
 
 
 @report.command("day")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.option("--section", default=None, help="print one section only")
 @click.pass_obj
 def report_day(session: Session, on_day: str, section: str | None) -> None:
@@ -65,7 +66,7 @@ def report_period(session: Session, first: str, last: str) -> None:
 
 
 @report.command("holdings")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--place", is_flag=True, help="break each nuclide down by where it is")
 @click.pass_obj
 def report_holdings(session: Session, moment: str, place: bool) -> None:
@@ -99,7 +100,7 @@ def report_licence(session: Session) -> None:
 
 @report.command("room")
 @click.argument("symbol")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.pass_obj
 def report_room(session: Session, symbol: str, moment: str) -> None:
     """How much more of a nuclide the licence would allow right now."""
@@ -117,7 +118,7 @@ def report_room(session: Session, symbol: str, moment: str) -> None:
 
 @report.command("export")
 @click.argument("folder", type=click.Path(file_okay=False, path_type=Path))
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.pass_obj
 def report_export(session: Session, folder: Path, on_day: str) -> None:
     """Write a day out as csv."""

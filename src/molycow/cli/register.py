@@ -6,6 +6,7 @@ import datetime as dt
 
 import click
 
+from molycow.cli.options import on_option, on_option_maybe
 from molycow.cli.session import Session
 from molycow.clock import parse_day
 from molycow.model import AuthorizedUser, Customer, CustomerKind
@@ -58,7 +59,7 @@ def customer_add(
 
 @customer.command("list")
 @click.option("--zone", "zone_name", default=None, help="only this delivery zone")
-@click.option("--on", "on_day", default=None, help="only the ones open on this day")
+@on_option_maybe("only the ones open on this day")
 @click.pass_obj
 def customer_list(session: Session, zone_name: str | None, on_day: str | None) -> None:
     """List the customers."""
@@ -75,7 +76,7 @@ def customer_list(session: Session, zone_name: str | None, on_day: str | None) -
 
 @customer.command("close")
 @click.argument("customer_id")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.pass_obj
 def customer_close(session: Session, customer_id: str, on_day: str) -> None:
     """Take a customer off the books without losing their records."""
@@ -126,7 +127,7 @@ def physician_add(
 
 @physician.command("list")
 @click.argument("customer_id")
-@click.option("--on", "on_day", default=None, help="only the ones current that day")
+@on_option_maybe("only the ones current that day")
 @click.pass_obj
 def physician_list(session: Session, customer_id: str, on_day: str | None) -> None:
     """List the physicians named at a customer."""
@@ -144,7 +145,7 @@ def physician_list(session: Session, customer_id: str, on_day: str | None) -> No
 
 @physician.command("end")
 @click.argument("user_id")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.pass_obj
 def physician_end(session: Session, user_id: str, on_day: str) -> None:
     """Take a physician off a licence."""

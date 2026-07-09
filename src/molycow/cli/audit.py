@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import click
 
+from molycow.cli.options import on_option
 from molycow.cli.session import Session
 from molycow.clock import parse_day
 from molycow.store.audit import AuditRepository
@@ -15,7 +16,7 @@ def audit() -> None:
 
 
 @audit.command("day")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.option("--actor", default=None, help="only what one person did")
 @click.pass_obj
 def audit_day(session: Session, on_day: str, actor: str | None) -> None:

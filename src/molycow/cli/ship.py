@@ -6,6 +6,7 @@ from decimal import Decimal
 
 import click
 
+from molycow.cli.options import at_option, at_option_maybe, on_option
 from molycow.cli.session import Session
 from molycow.clock import parse_day, parse_moment, stamp
 from molycow.service.returns import ReturnService
@@ -20,7 +21,7 @@ def ship() -> None:
 
 @ship.command("ready")
 @click.argument("customer_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.pass_obj
 def ship_ready(session: Session, customer_id: str, moment: str) -> None:
     """Doses drawn for a customer that are not in a box yet."""
@@ -38,7 +39,7 @@ def ship_ready(session: Session, customer_id: str, moment: str) -> None:
 @ship.command("pack")
 @click.argument("customer_id")
 @click.argument("dose_ids", nargs=-1, required=True)
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--by", "packed_by", required=True)
 @click.option("--surface", required=True, help="the reading on the box, in mrem/h")
 @click.option("--metre", required=True, help="the reading a metre away, in mrem/h")
@@ -68,7 +69,7 @@ def ship_pack(
 
 @ship.command("deliver")
 @click.argument("shipment_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--to", "received_by", required=True)
 @click.pass_obj
 def ship_deliver(session: Session, shipment_id: str, moment: str, received_by: str) -> None:
@@ -85,7 +86,7 @@ def ship_deliver(session: Session, shipment_id: str, moment: str, received_by: s
 
 
 @ship.command("manifest")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.pass_obj
 def ship_manifest(session: Session, on_day: str) -> None:
     """The day's boxes, with the index the van is carrying."""
@@ -131,7 +132,7 @@ def ship_show(session: Session, shipment_id: str) -> None:
 
 @ship.command("return")
 @click.argument("dose_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--why", "reason", required=True, help="why it was not used")
 @click.option("--by", "received_by", required=True)
 @click.pass_obj
@@ -146,7 +147,7 @@ def ship_return(session: Session, dose_id: str, moment: str, reason: str, receiv
 
 @ship.command("returns")
 @click.option("--customer", "customer_id", default=None)
-@click.option("--at", "moment", default=None, help="add the returns up at this moment")
+@at_option_maybe("add the returns up at this moment")
 @click.pass_obj
 def ship_returns(session: Session, customer_id: str | None, moment: str | None) -> None:
     """The syringes that came back."""

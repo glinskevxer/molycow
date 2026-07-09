@@ -35,7 +35,7 @@ def group_modules() -> list[str]:
     return sorted(
         path.stem
         for path in CLI_ROOT.glob("*.py")
-        if path.stem not in {"__init__", "main", "session"}
+        if path.stem not in {"__init__", "main", "session", "options"}
     )
 
 

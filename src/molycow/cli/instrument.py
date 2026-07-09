@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import click
 
+from molycow.cli.options import at_option, on_option, on_option_maybe
 from molycow.cli.session import Session
 from molycow.clock import parse_day, parse_moment, stamp
 from molycow.model.instrument import CheckSource, Instrument, InstrumentKind
@@ -53,7 +54,7 @@ def instrument_add(
 
 
 @instrument.command("list")
-@click.option("--on", "on_day", default=None, help="only the ones usable that day")
+@on_option_maybe("only the ones usable that day")
 @click.pass_obj
 def instrument_list(session: Session, on_day: str | None) -> None:
     """The instruments."""
@@ -97,7 +98,7 @@ def instrument_source(
 
 
 @instrument.command("sources")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.pass_obj
 def instrument_sources(session: Session, on_day: str) -> None:
     """The sources in use on a day, with what they read now."""
@@ -124,7 +125,7 @@ def instrument_sources(session: Session, on_day: str) -> None:
     default=CheckKind.CONSTANCY.value,
     show_default=True,
 )
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--read", "measured", required=True, help="what the instrument read")
 @click.option("--by", "checked_by", required=True)
 @click.pass_obj
@@ -188,7 +189,7 @@ def instrument_linearity(
 
 @instrument.command("due")
 @click.argument("instrument_id")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.pass_obj
 def instrument_due(session: Session, instrument_id: str, on_day: str) -> None:
     """Which checks have run past their interval."""

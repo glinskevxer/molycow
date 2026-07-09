@@ -6,6 +6,7 @@ from decimal import Decimal
 
 import click
 
+from molycow.cli.options import at_option
 from molycow.cli.session import Session
 from molycow.clock import parse_moment, stamp
 from molycow.model.waste import ContainerKind
@@ -21,7 +22,7 @@ def waste() -> None:
 
 @waste.command("open")
 @click.option("--kind", type=click.Choice([one.value for one in ContainerKind]), required=True)
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.pass_obj
 def waste_open(session: Session, kind: str, moment: str) -> None:
     """Open a container."""
@@ -36,7 +37,7 @@ def waste_open(session: Session, kind: str, moment: str) -> None:
 @click.argument("container_id")
 @click.option("--nuclide", "symbol", required=True)
 @click.option("--activity", required=True)
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--from", "source", required=True, help="what it came out of")
 @click.pass_obj
 def waste_discard(
@@ -58,7 +59,7 @@ def waste_discard(
 @waste.command("dose")
 @click.argument("container_id")
 @click.argument("dose_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.pass_obj
 def waste_dose(session: Session, container_id: str, dose_id: str, moment: str) -> None:
     """Put an unused syringe away at what it reads now."""
@@ -71,7 +72,7 @@ def waste_dose(session: Session, container_id: str, dose_id: str, moment: str) -
 
 @waste.command("close")
 @click.argument("container_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.pass_obj
 def waste_close(session: Session, container_id: str, moment: str) -> None:
     """Close a container and start its hold."""
@@ -84,7 +85,7 @@ def waste_close(session: Session, container_id: str, moment: str) -> None:
 
 
 @waste.command("store")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.pass_obj
 def waste_store(session: Session, moment: str) -> None:
     """What is in the store, and why each drum is still there."""
@@ -108,7 +109,7 @@ def waste_store(session: Session, moment: str) -> None:
 
 @waste.command("dispose")
 @click.argument("container_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--by", "disposed_by", required=True)
 @click.option("--survey", "survey_mrem", required=True, help="the reading with the label off")
 @click.pass_obj

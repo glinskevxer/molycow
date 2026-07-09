@@ -7,6 +7,7 @@ from decimal import Decimal
 
 import click
 
+from molycow.cli.options import at_option, on_option, on_option_maybe
 from molycow.cli.session import Session
 from molycow.clock import day_of, parse_day, parse_moment, stamp
 from molycow.model.generator import Generator
@@ -68,7 +69,7 @@ def generator_receive(
 
 
 @generator.command("list")
-@click.option("--on", "on_day", default=None, help="only the ones in date that day")
+@on_option_maybe("only the ones in date that day")
 @click.pass_obj
 def generator_list(session: Session, on_day: str | None) -> None:
     """List the columns."""
@@ -88,7 +89,7 @@ def generator_list(session: Session, on_day: str | None) -> None:
 
 @generator.command("retire")
 @click.argument("generator_id")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.pass_obj
 def generator_retire(session: Session, generator_id: str, on_day: str) -> None:
     """Take a column off the bench to go back to the maker."""
@@ -99,7 +100,7 @@ def generator_retire(session: Session, generator_id: str, on_day: str) -> None:
 
 @generator.command("expect")
 @click.argument("generator_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.pass_obj
 def generator_expect(session: Session, generator_id: str, moment: str) -> None:
     """Say what a column should give up if it were milked now."""
@@ -113,7 +114,7 @@ def generator_expect(session: Session, generator_id: str, moment: str) -> None:
 
 @generator.command("milk")
 @click.argument("generator_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--volume", required=True, help="what came off, as '10 mL'")
 @click.option("--activity", required=True, help="what the calibrator read")
 @click.option("--force", is_flag=True, help="accept a poor yield anyway")
@@ -148,7 +149,7 @@ def generator_milk(
 
 @generator.command("test")
 @click.argument("elution_id")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--moly", required=True, help="the molybdenum found, as '0.9 uCi'")
 @click.option("--aluminium", "aluminium_ppm", required=True, type=str)
 @click.option("--by", "tested_by", required=True)
@@ -184,7 +185,7 @@ def generator_test(
 
 
 @generator.command("eluates")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.pass_obj
 def generator_eluates(session: Session, moment: str) -> None:
     """The eluate vials that may still be drawn from."""
@@ -205,7 +206,7 @@ def generator_eluates(session: Session, moment: str) -> None:
 
 
 @generator.command("log")
-@click.option("--on", "on_day", default=None)
+@on_option_maybe()
 @click.pass_obj
 def generator_log(session: Session, on_day: str | None) -> None:
     """The elution log, for a day or for the whole book."""
@@ -228,7 +229,7 @@ def generator_log(session: Session, on_day: str | None) -> None:
 @generator.command("receipt")
 @click.argument("reference")
 @click.option("--supplier", required=True)
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--surface", required=True, help="the reading on the box, in mrem/h")
 @click.option("--metre", required=True, help="the reading a metre away, in mrem/h")
 @click.option("--wipe", "wipe_dpm", required=True, help="the wipe of the outside, in dpm")
@@ -259,7 +260,7 @@ def generator_receipt(
 
 
 @generator.command("receipts")
-@click.option("--on", "on_day", default=None)
+@on_option_maybe()
 @click.pass_obj
 def generator_receipts(session: Session, on_day: str | None) -> None:
     """The packages booked in, or the ones that failed."""

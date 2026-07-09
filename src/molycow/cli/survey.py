@@ -6,6 +6,7 @@ from decimal import Decimal
 
 import click
 
+from molycow.cli.options import at_option, on_option
 from molycow.cli.session import Session
 from molycow.clock import parse_day, parse_moment, stamp
 from molycow.model.survey import WIPE_LIMIT_DPM, Area, DoseRate, Wipe
@@ -19,7 +20,7 @@ def survey() -> None:
 
 
 @survey.command("walk")
-@click.option("--at", "moment", required=True)
+@at_option()
 @click.option("--by", "surveyed_by", required=True)
 @click.option(
     "--read",
@@ -69,7 +70,7 @@ def survey_walk(
 
 
 @survey.command("day")
-@click.option("--on", "on_day", required=True)
+@on_option()
 @click.pass_obj
 def survey_day(session: Session, on_day: str) -> None:
     """What was surveyed on a day and what was missed."""
