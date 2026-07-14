@@ -261,3 +261,41 @@ def test_an_order_with_no_notice_has_to_be_marked_stat(runner: CliRunner, bookfi
         "--stat",
     )
     assert taken.exit_code == 0
+
+
+def test_an_order_is_amended_from_the_command_line(runner: CliRunner, bookfile: Path) -> None:
+    take(runner, bookfile)
+    result = call(
+        runner,
+        bookfile,
+        "order",
+        "amend",
+        "ORD-250407-01",
+        "--at",
+        "2025-04-08 06:00",
+        "--by",
+        "K. Ruzicka",
+        "--activity",
+        "25 mCi",
+    )
+    assert "now 25.0 mCi" in result.output
+    assert "25.0 mCi" in call(runner, bookfile, "order", "list").output
+
+
+def test_an_amendment_outside_the_rules_is_refused(runner: CliRunner, bookfile: Path) -> None:
+    take(runner, bookfile)
+    result = call(
+        runner,
+        bookfile,
+        "order",
+        "amend",
+        "ORD-250407-01",
+        "--at",
+        "2025-04-08 06:00",
+        "--by",
+        "K. Ruzicka",
+        "--activity",
+        "200 mCi",
+    )
+    assert result.exit_code != 0
+    assert "adult dose" in str(result.exception)

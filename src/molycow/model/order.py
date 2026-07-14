@@ -154,6 +154,31 @@ class Order:
             priority=self.priority,
         )
 
+    def amended(self, activity: Activity, calibration_at: dt.datetime) -> Order:
+        """The same order with a new activity or a new time on it.
+
+        A hospital moves a patient and telephones. That is an amendment, not a
+        new order, because the old one has to stop existing: two open orders
+        for one patient is how somebody gets two syringes.
+        """
+        if self.state.is_final:
+            raise ValidationError(
+                "that order has already been finished", id=self.id, state=self.state.value
+            )
+        return Order(
+            id=self.id,
+            customer_id=self.customer_id,
+            user_id=self.user_id,
+            code=self.code,
+            procedure=self.procedure,
+            patient_ref=self.patient_ref,
+            activity=activity,
+            calibration_at=calibration_at,
+            ordered_at=self.ordered_at,
+            state=self.state,
+            priority=self.priority,
+        )
+
     def filled(self) -> Order:
         return self.with_state(OrderState.FILLED)
 

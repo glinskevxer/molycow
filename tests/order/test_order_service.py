@@ -179,3 +179,69 @@ def test_a_filled_stat_order_leaves_the_worklist(book: Book) -> None:
     order = take(service, calibration_at=at("2025-04-08 20:00"), priority=Priority.STAT)
     service.cancel(order.id)  # type: ignore[attr-defined]
     assert service.worklist(at("2025-04-08 06:30"), hours=2) == []
+
+
+def test_an_open_order_can_be_amended(book: Book) -> None:
+    a_register(book)
+    service = OrderService(book)
+    order = take(service)
+    amended = service.amend(
+        order.id,  # type: ignore[attr-defined]
+        at("2025-04-08 06:00"),
+        "K. Ruzicka",
+        activity=Activity.of(25, "mci"),
+    )
+    assert amended.activity == Activity.of(25, "mci")
+    assert OrderRepository(book).get(order.id).activity == Activity.of(25, "mci")  # type: ignore[attr-defined]
+
+
+def test_an_amendment_can_move_the_calibration_time(book: Book) -> None:
+    a_register(book)
+    service = OrderService(book)
+    order = take(service)
+    amended = service.amend(
+        order.id,  # type: ignore[attr-defined]
+        at("2025-04-08 06:00"),
+        "K. Ruzicka",
+        calibration_at=at("2025-04-08 13:00"),
+    )
+    assert amended.calibration_at == at("2025-04-08 13:00")
+
+
+def test_an_amendment_is_held_to_the_same_rules_as_the_order(book: Book) -> None:
+    a_register(book)
+    service = OrderService(book)
+    order = take(service)
+    with pytest.raises(RuleError, match="not an adult dose"):
+        service.amend(
+            order.id,  # type: ignore[attr-defined]
+            at("2025-04-08 06:00"),
+            "K. Ruzicka",
+            activity=Activity.of(120, "mci"),
+        )
+
+
+def test_a_finished_order_cannot_be_amended(book: Book) -> None:
+    a_register(book)
+    service = OrderService(book)
+    order = take(service)
+    service.cancel(order.id)  # type: ignore[attr-defined]
+    with pytest.raises(RuleError, match="already been finished"):
+        service.amend(order.id, at("2025-04-08 06:00"), "K. R")  # type: ignore[attr-defined]
+
+
+def test_an_amendment_is_written_into_the_trail(book: Book) -> None:
+    from molycow.store.audit import AuditRepository
+
+    a_register(book)
+    service = OrderService(book)
+    order = take(service)
+    service.amend(
+        order.id,  # type: ignore[attr-defined]
+        at("2025-04-08 06:00"),
+        "K. Ruzicka",
+        activity=Activity.of(25, "mci"),
+    )
+    trail = AuditRepository(book).for_subject(order.id)  # type: ignore[attr-defined]
+    assert trail[-1].action == "amended"
+    assert "25.0 mCi" in trail[-1].detail

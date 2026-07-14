@@ -130,6 +130,14 @@ class OrderRepository(Records):
         )
         return order
 
+    def save_amendment(self, order: Order) -> Order:
+        """Write an activity or a time the model has already checked."""
+        self._book.execute(
+            "UPDATE customer_order SET activity = ?, calibration_at = ? WHERE id = ?",
+            (activity_out(order.activity), moment_out(order.calibration_at), order.id),
+        )
+        return order
+
     def next_id(self, day: dt.date) -> str:
         return next_id(self._book, Kind.ORDER, day)
 

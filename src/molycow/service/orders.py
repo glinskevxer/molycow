@@ -114,6 +114,40 @@ class OrderService:
         with self._book.atomic():
             return self._orders.save_state(order.cancelled())
 
+    def amend(
+        self,
+        order_id: str,
+        at: dt.datetime,
+        by: str,
+        activity: Activity | None = None,
+        calibration_at: dt.datetime | None = None,
+    ) -> Order:
+        """Change what an open order asks for, against the same rules as taking it."""
+        order = self._orders.get(order_id)
+        if not order.is_open():
+            raise RuleError(
+                "order-final",
+                "that order has already been finished",
+                order=order_id,
+                state=order.state.value,
+            )
+        wanted = activity or order.activity
+        when = calibration_at or order.calibration_at
+        refused = self.refusal_for(order.customer_id, order.user_id, order.code, wanted, when)
+        if refused is not None:
+            raise RuleError(refused.rule, refused.reason, order=order_id)
+        amended = order.amended(wanted, when)
+        with self._book.atomic():
+            self._orders.save_amendment(amended)
+            self._audit.record(
+                at,
+                by,
+                "amended",
+                order_id,
+                f"{amended.activity.format('mci', 1)} at {when:%Y-%m-%d %H:%M}",
+            )
+        return amended
+
     def due_on(self, day: dt.date) -> list[Order]:
         return [one for one in self._orders.due_on(day, self._tz) if one.is_open()]
 

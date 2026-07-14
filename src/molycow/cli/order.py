@@ -168,3 +168,33 @@ def order_cancel(session: Session, order_id: str) -> None:
     with session.open() as book:
         cancelled = OrderService(book, session.tz).cancel(order_id)
         click.echo(f"{cancelled.id} cancelled")
+
+
+@order.command("amend")
+@click.argument("order_id")
+@at_option("when the amendment came in")
+@click.option("--by", "amended_by", required=True)
+@click.option("--activity", default=None, help="the new activity, if it changed")
+@click.option("--calibration", default=None, help="the new calibration time, if it moved")
+@click.pass_obj
+def order_amend(
+    session: Session,
+    order_id: str,
+    moment: str,
+    amended_by: str,
+    activity: str | None,
+    calibration: str | None,
+) -> None:
+    """Change what an open order asks for."""
+    with session.open() as book:
+        amended = OrderService(book, session.tz).amend(
+            order_id,
+            parse_moment(moment, session.tz),
+            amended_by,
+            Activity.parse(activity) if activity else None,
+            parse_moment(calibration, session.tz) if calibration else None,
+        )
+        click.echo(
+            f"{amended.id} now {amended.activity.format('mci', 1)} at "
+            f"{stamp(amended.calibration_at, session.tz)}"
+        )
