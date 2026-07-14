@@ -12,7 +12,7 @@ import re
 import sys
 
 from molycow import __version__
-from molycow.tools import build_glossary, check_migrations, schema_dump
+from molycow.tools import build_glossary, build_rules, check_migrations, schema_dump
 from molycow.tools.walk import Finding, repo_root, report
 
 PYPROJECT = repo_root() / "pyproject.toml"
@@ -56,6 +56,8 @@ def findings() -> list[Finding]:
         found.append(Finding(schema_dump.DOCUMENT, 1, "the schema document is out of date"))
     if build_glossary.main(["--check"]) != 0:
         found.append(Finding(build_glossary.DOCUMENT, 1, "the glossary is out of date"))
+    if build_rules.main(["--check"]) != 0:
+        found.append(Finding(build_rules.DOCUMENT, 1, "the rules document is out of date"))
     return found
 
 

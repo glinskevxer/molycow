@@ -32,6 +32,7 @@ for check in check_docstrings check_layers check_wiring check_tests check_cli \
 done
 run schema_dump "$python" -m molycow.tools.schema_dump --check
 run build_glossary "$python" -m molycow.tools.build_glossary --check
+run build_rules "$python" -m molycow.tools.build_rules --check
 
 echo "tests"
 run pytest "$python" -m pytest -q "$@"

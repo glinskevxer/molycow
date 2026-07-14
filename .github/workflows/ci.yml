@@ -51,6 +51,7 @@ jobs:
       - run: python -m molycow.tools.check_readme
       - run: python -m molycow.tools.schema_dump --check
       - run: python -m molycow.tools.build_glossary --check
+      - run: python -m molycow.tools.build_rules --check
       - run: python -m molycow.tools.release_check
 
   tests:
