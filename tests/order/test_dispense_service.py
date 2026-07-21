@@ -168,3 +168,83 @@ def test_a_calibrator_with_no_morning_check_stops_the_draw(book: Book) -> None:
     with pytest.raises(SafetyError, match="not passed its constancy check today"):
         service.draw("ORD-250407-11", batch_id, DRAW, planned.needed, "K. Ruzicka", "IC-0009")
     assert OrderRepository(book).get("ORD-250407-11").is_open()
+
+
+def test_a_draw_too_small_to_measure_is_refused(book: Book) -> None:
+    from tests.support import (
+        CLEAN_SALINE,
+        CLEAN_SOLVENT,
+        a_calibrator,
+        a_kit_lot,
+        an_elution,
+    )
+
+    from molycow.service.compound import CompoundService
+    from molycow.service.purity import PurityService
+
+    a_register(book)
+    order = an_order(
+        book,
+        "ORD-250407-20",
+        code="SC",
+        procedure="sentinel node",
+        activity=Activity.of("0.5", "mci"),
+    )
+    a_calibrator(book)
+    elution_id = an_elution(book)
+    a_kit_lot(book, "KL-0200", code="SC")
+    colloid = CompoundService(book).compound(
+        "SC",
+        elution_id,
+        at("2025-04-08 07:15"),
+        Activity.of(80, "mci"),
+        "K. Ruzicka",
+        volume=Volume.of(1),
+    )
+    PurityService(book).run(
+        colloid.id, at("2025-04-08 07:30"), CLEAN_SOLVENT, CLEAN_SALINE, "K. Ruzicka"
+    )
+    service = DispenseService(book)
+    with pytest.raises(RuleError, match="too small to draw"):
+        service.plan(order.id, colloid.id, DRAW)
+
+
+def test_the_floor_under_a_draw_is_fifty_microlitres() -> None:
+    from molycow.service.dispense import SMALLEST_DRAW
+
+    assert Volume.of("0.05") == SMALLEST_DRAW
+
+
+def test_the_bench_says_the_smallest_dose_a_batch_can_give(book: Book) -> None:
+    batch_id = a_bench_with_a_released_batch(book)
+    service = DispenseService(book)
+    smallest = service.smallest_from(batch_id, DRAW)
+    assert smallest > Activity.zero()
+    planned = service.plan("ORD-250407-11", batch_id, DRAW)
+    assert planned.needed > smallest
+
+
+def test_the_smallest_dose_falls_with_the_batch(book: Book) -> None:
+    batch_id = a_bench_with_a_released_batch(book)
+    service = DispenseService(book)
+    early = service.smallest_from(batch_id, at("2025-04-08 07:40"))
+    late = service.smallest_from(batch_id, at("2025-04-08 11:40"))
+    assert late < early
+
+
+def test_the_bench_can_be_told_what_to_dilute_to(book: Book) -> None:
+    batch_id = a_bench_with_a_released_batch(book)
+    service = DispenseService(book)
+    wanted = Activity.of("1", "mci")
+    made_up = service.dilution_for(batch_id, wanted, DRAW)
+    assert made_up > Volume.of("3.4")
+    with pytest.raises(RuleError, match="nothing is not an activity"):
+        service.dilution_for(batch_id, Activity.zero(), DRAW)
+
+
+def test_a_rule_exists_for_a_draw_that_is_too_small() -> None:
+    from molycow.rules import find
+
+    rule = find("draw-volume")
+    assert rule is not None
+    assert rule.about == "doses"

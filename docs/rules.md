@@ -4,7 +4,7 @@ Every refusal this package can make, and what the rule behind it says.
 The short name in brackets is what a message carries in front of it and
 what the audit trail records.
 
-48 rules in 14 groups.
+49 rules in 14 groups.
 
 ## batches
 
@@ -14,6 +14,7 @@ what the audit trail records.
 
 ## doses
 
+- **draw-volume** — a syringe is not filled below what it can measure
 - **dose-tolerance** — a syringe assays close to what was ordered
 
 ## eluate

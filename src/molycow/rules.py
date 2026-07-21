@@ -36,6 +36,7 @@ RULES: tuple[Rule, ...] = (
     Rule("container-held", "waste", "a drum waits ten half lives and a survey"),
     Rule("contamination-open", "surveys", "a dirty spot is open until it wipes clean"),
     Rule("disposal-survey", "waste", "waste leaves only at background"),
+    Rule("draw-volume", "doses", "a syringe is not filled below what it can measure"),
     Rule("dose-tolerance", "doses", "a syringe assays close to what was ordered"),
     Rule("eluate-failed", "eluate", "a failed eluate is not used"),
     Rule("eluate-not-released", "eluate", "nothing is drawn from an eluate that is not released"),

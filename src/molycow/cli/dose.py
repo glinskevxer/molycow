@@ -51,9 +51,11 @@ def dose_batches(session: Session, order_id: str, moment: str) -> None:
         if not found:
             click.echo("nothing on the bench would fill it")
             return
+        service = DispenseService(book, session.tz)
         for batch in found:
             click.echo(
                 f"{batch.id}  {batch.code:7} {batch.concentration_at(when).format('mci', 1)}  "
+                f"smallest draw {service.smallest_from(batch.id, when).format('mci', 2)}  "
                 f"expires {stamp(batch.expires_at, session.tz)}"
             )
 

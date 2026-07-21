@@ -10,6 +10,12 @@ is the number on the assay, not the number of millilitres, and a bench that
 expects a bigger volume later in the morning is a bench that is about to draw
 the wrong syringe out of a batch someone topped up.
 
+There is a floor under the volume. Out of a strong batch a scan dose can work
+out at thirty microlitres, and at that size the last microlitre in the syringe
+is worth half a millicurie: the arithmetic is right and the syringe cannot be
+filled to it. The bench is told to dilute rather than handed a number it
+cannot draw.
+
 The assay is the technologist's own measurement of what they drew, and it is
 compared against the order, not against the plan. A plan that says 0.55 mL and
 a syringe that reads twenty percent light is a syringe that goes back.
@@ -37,6 +43,8 @@ from molycow.store.doses import DoseRepository
 from molycow.store.kits import BatchRepository
 from molycow.store.orders import OrderRepository
 from molycow.units import Activity, Volume
+
+SMALLEST_DRAW = Volume(Decimal("0.05"))
 
 
 @dataclass(frozen=True)
@@ -101,6 +109,14 @@ class DispenseService:
             )
         needed = needed_at(order.activity, nuclide(order.nuclide), order.calibration_at, at)
         volume = batch.concentration_at(at).volume_for(needed)
+        if volume < SMALLEST_DRAW:
+            raise RuleError(
+                "draw-volume",
+                "that works out too small to draw, dilute the batch",
+                order=order_id,
+                volume=str(volume),
+                smallest=str(SMALLEST_DRAW),
+            )
         left = self.remaining_in(batch_id)
         if volume > left:
             raise RuleError(
@@ -170,6 +186,27 @@ class DispenseService:
                 f"{dose.volume} off {batch_id} on {calibrator_id}",
             )
         return dose
+
+    def smallest_from(self, batch_id: str, at: dt.datetime) -> Activity:
+        """The smallest dose that can honestly be drawn out of a batch.
+
+        Anything under this is a syringe the bench cannot fill accurately, and
+        the answer is to dilute rather than to draw it and hope.
+        """
+        batch = self._batches.get(batch_id)
+        return batch.concentration_at(at).activity_in(SMALLEST_DRAW)
+
+    def dilution_for(self, batch_id: str, wanted: Activity, at: dt.datetime) -> Volume:
+        """How much saline would put a wanted activity above the floor.
+
+        The volume the batch would have to be made up to, not the volume to
+        add: the bench reads the vial's total, not its own arithmetic.
+        """
+        batch = self._batches.get(batch_id)
+        activity_now = batch.activity_at(at)
+        if wanted.is_zero():
+            raise RuleError("draw-volume", "nothing is not an activity", batch=batch_id)
+        return Volume(activity_now.uci * SMALLEST_DRAW.ml / wanted.uci)
 
     def for_order(self, order_id: str) -> Dose | None:
         return self._doses.for_order(order_id)

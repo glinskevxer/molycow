@@ -402,3 +402,9 @@ def test_the_batch_view_shows_what_is_left(runner: CliRunner, bookfile: Path) ->
     result = call(runner, bookfile, "dose", "batch", "B-250408-01")
     assert "DS-250408-01" in result.output
     assert "left of B-250408-01" in result.output
+
+
+def test_the_batch_list_says_the_smallest_draw(runner: CliRunner, bookfile: Path) -> None:
+    a_calibrator(runner, bookfile)
+    result = call(runner, bookfile, "dose", "batches", "ORD-250407-01", "--at", "2025-04-08 07:40")
+    assert "smallest draw" in result.output
