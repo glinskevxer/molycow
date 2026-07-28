@@ -1,6 +1,10 @@
 """What is actually in the building at a moment, and what the licence allows.
 
-Everything is decayed to the same moment and added up by nuclide. That is the
+Everything is decayed to the same moment and added up by nuclide. The volumes
+already drawn out of the eluates and the batches, and the boxes that have been
+signed for, are each read in one query rather than one per record: a morning
+with forty doses in it was asking the book a hundred and twenty questions to
+answer one. That is the
 only way the possession limit means anything, because a generator delivered on
 Friday and an eluate drawn this morning are different numbers on different
 clocks until they are all brought to now.
@@ -25,6 +29,7 @@ from molycow.store.doses import DoseRepository
 from molycow.store.generators import ElutionRepository, GeneratorRepository
 from molycow.store.kits import BatchRepository
 from molycow.store.licence import LicenceRepository
+from molycow.store.rows import moment_in
 from molycow.store.shipments import ShipmentRepository
 from molycow.store.waste import ContainerRepository
 from molycow.units import Activity, Volume
@@ -106,27 +111,35 @@ class InventoryService:
             self._add(places, "Mo-99", "generators", generator.parent_at(at))
 
     def _add_eluates(self, places: dict[str, dict[str, Activity]], at: dt.datetime) -> None:
+        drawn = self._batches.eluate_drawn_by_elution()
         for elution in self._elutions.all():
             if at < elution.drawn_at:
                 continue
-            left = self._left_in_elution(elution.id, elution.volume)
-            if left.is_zero():
+            taken = drawn.get(elution.id, Volume.zero())
+            if taken >= elution.volume:
                 continue
+            left = elution.volume - taken
             self._add(places, "Tc-99m", "eluate", elution.concentration_at(at).activity_in(left))
 
     def _add_batches(self, places: dict[str, dict[str, Activity]], at: dt.datetime) -> None:
+        drawn = self._doses.drawn_by_batch()
         for batch in self._batches.all():
             if at < batch.made_at:
                 continue
-            left = self._left_in_batch(batch.id, batch.volume)
-            if left.is_zero():
+            taken = drawn.get(batch.id, Volume.zero())
+            if taken >= batch.volume:
                 continue
+            left = batch.volume - taken
             symbol = formula(batch.code).nuclide
             self._add(places, symbol, "batches", batch.concentration_at(at).activity_in(left))
 
     def _add_doses(self, places: dict[str, dict[str, Activity]], at: dt.datetime) -> None:
+        delivered = self._doses.delivered_moments()
         for dose in self._doses.all():
-            if at < dose.drawn_at or self._has_left(dose.id, at):
+            if at < dose.drawn_at:
+                continue
+            signed = delivered.get(dose.id)
+            if signed is not None and at >= moment_in(signed, "delivered_at"):
                 continue
             self._add(places, formula(dose.code).nuclide, "doses", dose.activity_at(at))
 
@@ -142,25 +155,6 @@ class InventoryService:
         for activity in by_place.values():
             total = total + activity
         return total
-
-    def _left_in_elution(self, elution_id: str, volume: Volume) -> Volume:
-        taken = Volume.zero()
-        for batch in self._batches.for_elution(elution_id):
-            taken = taken + batch.eluate_volume
-        return volume - taken if volume > taken else Volume.zero()
-
-    def _left_in_batch(self, batch_id: str, volume: Volume) -> Volume:
-        taken = Volume.zero()
-        for dose in self._doses.for_batch(batch_id):
-            taken = taken + dose.volume
-        return volume - taken if volume > taken else Volume.zero()
-
-    def _has_left(self, dose_id: str, at: dt.datetime) -> bool:
-        """A dose is off the premises once its box has been signed for."""
-        box = self._shipments.holding(dose_id)
-        if box is None or box.delivered_at is None:
-            return False
-        return at >= box.delivered_at
 
     def holding_of(self, symbol: str, at: dt.datetime) -> Activity:
         found = self.holdings(at).get(symbol)

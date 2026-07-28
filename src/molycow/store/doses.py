@@ -21,6 +21,7 @@ from molycow.store.rows import (
     volume_out,
 )
 from molycow.store.serials import next_id
+from molycow.units import Volume
 
 
 def dose_from(row: sqlite3.Row) -> Dose:
@@ -86,6 +87,23 @@ class DoseRepository(Records):
             "SELECT * FROM dose WHERE batch_id = ? ORDER BY drawn_at, id", (batch_id,)
         )
         return [dose_from(row) for row in rows]
+
+    def drawn_by_batch(self) -> dict[str, Volume]:
+        """How much has been drawn out of every batch, in one query."""
+        rows = self._book.all("SELECT batch_id, sum(volume) AS taken FROM dose GROUP BY batch_id")
+        return {str(row["batch_id"]): volume_in(row["taken"], "volume") for row in rows}
+
+    def delivered_moments(self) -> dict[str, str]:
+        """When each dose's box was signed for, for the doses that have left."""
+        rows = self._book.all(
+            """
+            SELECT shipment_dose.dose_id AS dose_id, shipment.delivered_at AS delivered_at
+            FROM shipment_dose
+            JOIN shipment ON shipment.id = shipment_dose.shipment_id
+            WHERE shipment.delivered_at IS NOT NULL
+            """
+        )
+        return {str(row["dose_id"]): str(row["delivered_at"]) for row in rows}
 
     def on_day(self, day: dt.date, tz: ZoneInfo | None = None) -> list[Dose]:
         where = tz or zone()

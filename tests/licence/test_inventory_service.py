@@ -131,3 +131,77 @@ def test_a_lowered_limit_can_put_the_building_over(book: Book) -> None:
     LicenceRepository(book).set_limit("Mo-99", "0.5", "licence amended down")
     over = InventoryService(book).over_limit(MORNING)
     assert [one.holding.symbol for one in over] == ["Mo-99"]
+
+
+def test_the_volumes_already_drawn_come_back_in_one_query(book: Book) -> None:
+    from molycow.store.doses import DoseRepository
+    from molycow.store.kits import BatchRepository
+    from molycow.units import Volume
+
+    day = a_working_day(book)
+    dispensing = DispenseService(book)
+    planned = dispensing.plan(day.order_id, day.batch_id, at("2025-04-08 07:40"))
+    dose = dispensing.draw(
+        day.order_id,
+        day.batch_id,
+        at("2025-04-08 07:40"),
+        planned.needed,
+        "K. Ruzicka",
+        day.calibrator_id,
+    )
+    drawn = DoseRepository(book).drawn_by_batch()
+    assert drawn[day.batch_id] == dose.volume
+    eluate = BatchRepository(book).eluate_drawn_by_elution()
+    assert sum(eluate.values(), Volume.zero()) > Volume.zero()
+
+
+def test_a_batch_nobody_drew_from_is_not_in_the_totals(book: Book) -> None:
+    from molycow.store.doses import DoseRepository
+
+    a_working_day(book)
+    assert DoseRepository(book).drawn_by_batch() == {}
+
+
+def test_the_delivered_boxes_are_read_in_one_query(book: Book) -> None:
+    from molycow.store.doses import DoseRepository
+
+    day = a_working_day(book)
+    dispensing = DispenseService(book)
+    planned = dispensing.plan(day.order_id, day.batch_id, at("2025-04-08 07:40"))
+    dose = dispensing.draw(
+        day.order_id,
+        day.batch_id,
+        at("2025-04-08 07:40"),
+        planned.needed,
+        "K. Ruzicka",
+        day.calibrator_id,
+    )
+    shipping = ShippingService(book)
+    box = shipping.pack(
+        "CU-0001", [dose.id], at("2025-04-08 08:20"), "K. Ruzicka", Decimal(12), Decimal("0.35")
+    )
+    assert DoseRepository(book).delivered_moments() == {}
+    shipping.deliver(box.id, at("2025-04-08 09:05"), "Reception")
+    assert dose.id in DoseRepository(book).delivered_moments()
+
+
+def test_the_holdings_still_add_up_after_the_shortcut(book: Book) -> None:
+    day = a_working_day(book)
+    dispensing = DispenseService(book)
+    planned = dispensing.plan(day.order_id, day.batch_id, at("2025-04-08 07:40"))
+    dispensing.draw(
+        day.order_id,
+        day.batch_id,
+        at("2025-04-08 07:40"),
+        planned.needed,
+        "K. Ruzicka",
+        day.calibrator_id,
+    )
+    service = InventoryService(book)
+    holdings = service.holdings(MORNING)
+    total = holdings["Tc-99m"].total
+    by_place = sum(
+        (one.uci for one in holdings["Tc-99m"].by_place.values()),
+        start=total.uci - total.uci,
+    )
+    assert by_place == total.uci

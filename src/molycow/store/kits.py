@@ -27,6 +27,7 @@ from molycow.store.rows import (
     volume_out,
 )
 from molycow.store.serials import next_id
+from molycow.units import Volume
 
 
 def kit_lot_from(row: sqlite3.Row) -> KitLot:
@@ -179,6 +180,13 @@ class BatchRepository(Records):
             "SELECT * FROM batch WHERE kit_lot_id = ? ORDER BY made_at, id", (lot_id,)
         )
         return [batch_from(row) for row in rows]
+
+    def eluate_drawn_by_elution(self) -> dict[str, Volume]:
+        """How much eluate has come out of every elution vial, in one query."""
+        rows = self._book.all(
+            "SELECT elution_id, sum(eluate_volume) AS taken FROM batch GROUP BY elution_id"
+        )
+        return {str(row["elution_id"]): volume_in(row["taken"], "eluate_volume") for row in rows}
 
     def on_day(self, day: dt.date, tz: ZoneInfo | None = None) -> list[Batch]:
         where = tz or zone()
