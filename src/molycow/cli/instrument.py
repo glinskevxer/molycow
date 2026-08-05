@@ -9,6 +9,7 @@ from molycow.cli.session import Session
 from molycow.clock import parse_day, parse_moment, stamp
 from molycow.model.instrument import CheckSource, Instrument, InstrumentKind
 from molycow.model.qc import CheckKind, LinearityPoint
+from molycow.report.instruments import instrument_sheet
 from molycow.service.qc import QcService
 from molycow.store.instruments import CheckSourceRepository, InstrumentRepository, QcRepository
 from molycow.units import Activity
@@ -215,3 +216,12 @@ def instrument_history(session: Session, instrument_id: str, kind: str | None) -
             return
         for one in found:
             click.echo(f"{stamp(one.at, session.tz)}  {one.source_serial}  {one.note()}")
+
+
+@instrument.command("board")
+@on_option("the day to read the board for")
+@click.pass_obj
+def instrument_board(session: Session, on_day: str) -> None:
+    """What is due, what is overdue, and what has failed."""
+    with session.open() as book:
+        click.echo(instrument_sheet(book, parse_day(on_day), session.tz).text())

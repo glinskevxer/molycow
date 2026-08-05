@@ -202,3 +202,10 @@ def test_a_calibrator_that_reads_low_at_the_bottom_fails_linearity(
         "K. Ruzicka",
     )
     assert "linearity FAILED" in result.output
+
+
+def test_the_board_prints_for_a_day(runner: CliRunner, bookfile: Path) -> None:
+    result = call(runner, bookfile, "instrument", "board", "--on", "2025-04-08")
+    assert "instruments 2025-04-08" in result.output
+    assert "IC-0001" in result.output
+    assert "overdue" in result.output
