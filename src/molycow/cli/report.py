@@ -13,6 +13,7 @@ from molycow.report.daysheet import day_sheet
 from molycow.report.export import export_day
 from molycow.report.period import Period, month, period_sheet
 from molycow.report.statement import statement
+from molycow.report.waste import waste_sheet
 from molycow.service.inventory import InventoryService
 from molycow.store.licence import LicenceRepository
 
@@ -138,3 +139,12 @@ def report_statement(session: Session, customer_id: str, year: int, number: int)
     """One customer's month, as their own office asks for it."""
     with session.open() as book:
         click.echo(statement(book, customer_id, month(year, number), session.tz).text())
+
+
+@report.command("waste")
+@at_option("the moment to read the store at")
+@click.pass_obj
+def report_waste(session: Session, moment: str) -> None:
+    """The waste store, and everything that has left it."""
+    with session.open() as book:
+        click.echo(waste_sheet(book, parse_moment(moment, session.tz), session.tz).text())

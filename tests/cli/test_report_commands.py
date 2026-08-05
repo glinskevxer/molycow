@@ -114,3 +114,9 @@ def test_a_customer_statement_prints(runner: CliRunner, bookfile: Path) -> None:
     assert "statement Saint Brannon" in result.output
     assert "orders" in result.output
     assert "1 filled" in result.output
+
+
+def test_the_waste_report_prints(runner: CliRunner, bookfile: Path) -> None:
+    result = call(runner, bookfile, "report", "waste", "--at", "2025-04-08 17:00")
+    assert "waste store" in result.output
+    assert "in the store" in result.output
