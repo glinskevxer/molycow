@@ -45,7 +45,7 @@ def test_a_recall_walks_forward_to_the_hospital(book: Book) -> None:
     assert [one.id for one in reach.batches] == ["B-250408-01"]
     assert reach.dose_ids == (dose_id,)
     assert reach.customers == ("CU-0001",)
-    assert "  telephone CU-0001" in reach.lines()
+    assert any(line.startswith("  telephone Saint Brannon") for line in reach.lines())
 
 
 def test_a_recall_finds_the_box_the_dose_went_out_in(book: Book) -> None:
@@ -92,3 +92,20 @@ def test_the_batches_from_every_pulled_lot_come_back_together(book: Book) -> Non
     assert service.batches_from_recalled() == []
     service.recall("KL-0114", PULLED, "maker found particulates", "K. Ruzicka")
     assert [one.id for one in service.batches_from_recalled()] == ["B-250408-01"]
+
+
+def test_the_recall_list_carries_the_telephone_number(book: Book) -> None:
+    from molycow.store.register import CustomerRepository
+
+    a_dose(book)
+    customer = CustomerRepository(book).get("CU-0001")
+    book.execute("UPDATE customer SET telephone = ? WHERE id = ?", ("580 555 0148", customer.id))
+    reach = RecallService(book).reach_of("KL-0114")
+    assert reach.telephone == ("Saint Brannon Medical Centre (nuclear medicine) on 580 555 0148",)
+    assert any("580 555 0148" in line for line in reach.lines())
+
+
+def test_a_customer_with_no_number_still_appears_on_the_list(book: Book) -> None:
+    a_dose(book)
+    reach = RecallService(book).reach_of("KL-0114")
+    assert any("no telephone on file" in line for line in reach.lines())

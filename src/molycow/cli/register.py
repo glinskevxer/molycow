@@ -26,6 +26,8 @@ def customer() -> None:
 @click.option("--town", required=True)
 @click.option("--zone", "zone_name", required=True)
 @click.option("--opened", "opened_on", default=None, help="the day they came on the books")
+@click.option("--telephone", default="", help="the number to ring about a recall")
+@click.option("--department", default="nuclear medicine", show_default=True)
 @click.pass_obj
 def customer_add(
     session: Session,
@@ -36,6 +38,8 @@ def customer_add(
     town: str,
     zone_name: str,
     opened_on: str | None,
+    telephone: str,
+    department: str,
 ) -> None:
     """Put a customer on the books."""
     with session.open() as book:
@@ -52,6 +56,8 @@ def customer_add(
                 town=town,
                 zone=zone_name,
                 opened_on=day,
+                telephone=telephone,
+                department=department,
             )
         )
         click.echo(f"{added.id} {added.name} {added.kind.value} {added.zone}")
@@ -71,7 +77,8 @@ def customer_list(session: Session, zone_name: str | None, on_day: str | None) -
             return
         for one in found:
             shut = "" if one.closed_on is None else f" closed {one.closed_on}"
-            click.echo(f"{one.id}  {one.name:34} {one.kind.value:9} {one.zone:7}{shut}")
+            ring = one.telephone or "no telephone"
+            click.echo(f"{one.id}  {one.name:34} {one.kind.value:9} {one.zone:7} {ring:14}{shut}")
 
 
 @customer.command("close")

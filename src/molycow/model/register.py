@@ -64,6 +64,8 @@ class Customer:
     zone: str
     opened_on: dt.date
     closed_on: dt.date | None = None
+    telephone: str = ""
+    department: str = "nuclear medicine"
 
     def __post_init__(self) -> None:
         expect(self.id, Kind.CUSTOMER)
@@ -94,6 +96,17 @@ class Customer:
     @property
     def address(self) -> str:
         return f"{self.street}, {self.town}"
+
+    @property
+    def can_be_telephoned(self) -> bool:
+        """Whether there is a number to ring when something has to be pulled."""
+        return bool(self.telephone.strip())
+
+    def contact(self) -> str:
+        """The line a recall list prints for this customer."""
+        if not self.can_be_telephoned:
+            return f"{self.name} ({self.department}), no telephone on file"
+        return f"{self.name} ({self.department}) on {self.telephone}"
 
 
 @dataclass(frozen=True)

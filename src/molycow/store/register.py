@@ -23,6 +23,8 @@ def customer_from(row: sqlite3.Row) -> Customer:
         zone=text_in(row, "zone"),
         opened_on=date_in(row["opened_on"], "opened_on"),
         closed_on=maybe_date_in(row["closed_on"], "closed_on"),
+        telephone=text_in(row, "telephone"),
+        department=text_in(row, "department"),
     )
 
 
@@ -33,8 +35,9 @@ class CustomerRepository(Records):
         self._book.execute(
             """
             INSERT INTO customer
-              (id, name, kind, licence, street, town, zone, opened_on, closed_on)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              (id, name, kind, licence, street, town, zone, opened_on, closed_on,
+               telephone, department)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 customer.id,
@@ -46,6 +49,8 @@ class CustomerRepository(Records):
                 customer.zone,
                 date_out(customer.opened_on),
                 date_out(customer.closed_on),
+                customer.telephone,
+                customer.department,
             ),
         )
         return customer
@@ -87,6 +92,8 @@ class CustomerRepository(Records):
             zone=current.zone,
             opened_on=current.opened_on,
             closed_on=on,
+            telephone=current.telephone,
+            department=current.department,
         )
         self._book.execute(
             "UPDATE customer SET closed_on = ? WHERE id = ?",

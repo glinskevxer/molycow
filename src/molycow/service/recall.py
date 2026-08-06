@@ -19,6 +19,7 @@ from molycow.store.book import Book
 from molycow.store.doses import DoseRepository
 from molycow.store.kits import BatchRepository, KitLotRepository
 from molycow.store.orders import OrderRepository
+from molycow.store.register import CustomerRepository
 from molycow.store.shipments import ShipmentRepository
 
 
@@ -31,6 +32,7 @@ class Reach:
     dose_ids: tuple[str, ...]
     customers: tuple[str, ...]
     shipments: tuple[str, ...]
+    telephone: tuple[str, ...] = ()
 
     @property
     def is_empty(self) -> bool:
@@ -41,7 +43,7 @@ class Reach:
         out = [f"{self.lot.id} {self.lot.code} lot {self.lot.lot}"]
         out.extend(f"  batch {batch.id} made {batch.made_at:%Y-%m-%d}" for batch in self.batches)
         out.extend(f"  dose {dose_id}" for dose_id in self.dose_ids)
-        out.extend(f"  telephone {customer}" for customer in self.customers)
+        out.extend(f"  telephone {line}" for line in self.telephone or self.customers)
         return out
 
 
@@ -56,6 +58,7 @@ class RecallService:
         self._doses = DoseRepository(book)
         self._orders = OrderRepository(book)
         self._shipments = ShipmentRepository(book)
+        self._customers = CustomerRepository(book)
         self._audit = AuditRepository(book)
 
     def reach_of(self, lot_id: str) -> Reach:
@@ -80,6 +83,7 @@ class RecallService:
             dose_ids=tuple(dose_ids),
             customers=tuple(customers),
             shipments=tuple(shipments),
+            telephone=tuple(self._customers.get(one).contact() for one in customers),
         )
 
     def recall(self, lot_id: str, at: dt.datetime, reason: str, by: str) -> Reach:

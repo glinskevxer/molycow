@@ -1,6 +1,6 @@
 # schema
 
-Generated from the migrations. Schema version 23.
+Generated from the migrations. Schema version 24.
 
 ## audit
 
@@ -94,6 +94,8 @@ Generated from the migrations. Schema version 23.
 - `zone` TEXT (not null)
 - `opened_on` TEXT (not null)
 - `closed_on` TEXT
+- `telephone` TEXT (not null)
+- `department` TEXT (not null)
 - indexes: customer_by_zone
 
 ## customer_order

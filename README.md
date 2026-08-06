@@ -37,7 +37,7 @@ Python 3.12 or 3.13. The only runtime dependency is click.
 
 ```console
 $ molycow --book day.sqlite3 book init
-day.sqlite3 is at schema 23, 23 steps applied
+day.sqlite3 is at schema 24, 24 steps applied
 
 $ molycow --book day.sqlite3 customer add "Saint Brannon Medical Centre" \
     --kind hospital --licence 42-28931-01 --street "1400 Weir Street" \

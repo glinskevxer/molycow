@@ -194,3 +194,37 @@ def test_a_physician_can_be_ended_and_drops_off_the_current_list(
 def test_a_customer_with_nobody_named(runner: CliRunner, bookfile: Path) -> None:
     add_a_customer(runner, bookfile)
     assert "nobody is named" in call(runner, bookfile, "physician", "list", "CU-0001").output
+
+
+def test_a_telephone_number_can_be_kept_against_a_customer(
+    runner: CliRunner, bookfile: Path
+) -> None:
+    result = call(
+        runner,
+        bookfile,
+        "customer",
+        "add",
+        "Halvern Clinic",
+        "--kind",
+        "clinic",
+        "--licence",
+        "42-28931-02",
+        "--street",
+        "9 Depot Road",
+        "--town",
+        "Ardmore",
+        "--zone",
+        "river",
+        "--opened",
+        "2025-01-06",
+        "--telephone",
+        "580 555 0148",
+    )
+    assert result.exit_code == 0
+    listed = call(runner, bookfile, "customer", "list")
+    assert "580 555 0148" in listed.output
+
+
+def test_a_customer_with_no_number_says_so_in_the_list(runner: CliRunner, bookfile: Path) -> None:
+    add_a_customer(runner, bookfile)
+    assert "no telephone" in call(runner, bookfile, "customer", "list").output

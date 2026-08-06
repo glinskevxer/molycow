@@ -135,3 +135,16 @@ def test_a_user_can_be_renamed_onto_a_different_set() -> None:
     widened = a_user().with_nuclides(["Tc-99m", "I-131", "Lu-177"])
     assert widened.may_order("Lu-177")
     assert widened.id == "AU-0004"
+
+
+def test_a_customer_with_a_number_can_be_telephoned() -> None:
+    reachable = a_customer(telephone="580 555 0148", department="nuclear medicine")
+    assert reachable.can_be_telephoned
+    assert reachable.contact() == (
+        "Saint Brannon Medical Centre (nuclear medicine) on 580 555 0148"
+    )
+
+
+def test_a_customer_with_no_number_says_so_on_the_recall_list() -> None:
+    assert not a_customer().can_be_telephoned
+    assert a_customer().contact().endswith("no telephone on file")
