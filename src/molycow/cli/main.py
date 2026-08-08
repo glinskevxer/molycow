@@ -27,8 +27,30 @@ from molycow.errors import MolycowError
 from molycow.rules import about, rules, subjects
 from molycow.store.migrations import apply, latest, pending, schema_version
 
+EPILOG = """\
+A morning, in the order it happens:
 
-@click.group()
+  molycow book init
+  molycow customer add "Saint Brannon" --kind hospital --licence 42-28931-01 \\
+      --street "1400 Weir Street" --town Ardmore --zone north
+  molycow instrument check IC-0001 CS-9912 --at "2025-04-08 06:05" \\
+      --read "175 uCi" --by "K. Ruzicka"
+  molycow generator milk GEN-0001 --at "2025-04-08 06:30" \\
+      --volume "10 mL" --activity "940 mCi"
+  molycow generator test EL-250408-01 --at "2025-04-08 06:45" \\
+      --moly "0.9 uCi" --aluminium 4 --by "K. Ruzicka"
+  molycow kit compound MDP EL-250408-01 --at "2025-04-08 07:15" \\
+      --activity "300 mCi" --by "K. Ruzicka"
+  molycow dose draw ORD-250407-01 B-250408-01 --at "2025-04-08 07:40" \\
+      --assay "25.65 mCi" --by "K. Ruzicka" --calibrator IC-0001
+  molycow report day --on 2025-04-08
+
+Times are local. Activities carry their unit: '25 mCi', '925 MBq', '300 uCi'.
+'molycow book laws' lists every rule the pharmacy will refuse on.
+"""
+
+
+@click.group(epilog=EPILOG)
 @click.option(
     "--book",
     "book_path",

@@ -57,6 +57,12 @@ def groups_defined_in(module_name: str) -> list[click.Group]:
 def findings() -> list[Finding]:
     """Every command with no help, and every group the root does not carry."""
     found: list[Finding] = []
+    if not run.epilog:
+        found.append(Finding(CLI_ROOT / "main.py", 1, "the root group has no worked example"))
+    elif "molycow book laws" not in run.epilog:
+        found.append(
+            Finding(CLI_ROOT / "main.py", 1, "the root example does not point at the rules")
+        )
     carried = set(run.commands.values())
     for path, command in walk(run):
         if not (command.help or command.short_help):

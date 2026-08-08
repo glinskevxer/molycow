@@ -188,3 +188,23 @@ def test_a_subject_nobody_has_rules_about_lists_the_ones_that_exist(
     result = runner.invoke(run, ["--book", str(target), "book", "laws", "--about", "gossip"])
     assert result.exit_code != 0
     assert "try one of" in result.output
+
+
+def test_the_help_shows_the_worked_example(runner: CliRunner) -> None:
+    result = runner.invoke(run, ["--help"])
+    assert result.exit_code == 0
+    assert "A morning, in the order it happens" in result.output
+    assert "molycow report day --on 2025-04-08" in result.output
+
+
+def test_every_group_shows_up_in_the_help(runner: CliRunner) -> None:
+    result = runner.invoke(run, ["--help"])
+    for group in ("generator", "kit", "dose", "ship", "route", "waste", "report", "audit"):
+        assert group in result.output
+
+
+def test_a_group_prints_its_own_commands(runner: CliRunner) -> None:
+    result = runner.invoke(run, ["kit", "--help"])
+    assert "compound" in result.output
+    assert "strips" in result.output
+    assert "recall" in result.output

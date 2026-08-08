@@ -48,3 +48,35 @@ def test_the_leaf_commands_carry_their_options() -> None:
     draw = commands["dose draw"]
     names = {option.name for option in draw.params}
     assert {"assay", "calibrator_id", "drawn_by"} <= names
+
+
+def test_the_root_group_carries_a_worked_example() -> None:
+    assert run.epilog
+    assert "molycow generator milk" in run.epilog
+    assert "molycow book laws" in run.epilog
+
+
+def test_the_example_says_what_the_units_look_like() -> None:
+    assert run.epilog is not None
+    assert "'25 mCi'" in run.epilog
+    assert "Times are local" in run.epilog
+
+
+def test_a_root_group_with_no_example_is_a_finding() -> None:
+    original = run.epilog
+    run.epilog = None
+    try:
+        messages = [one.message for one in check_cli.findings()]
+        assert "the root group has no worked example" in messages
+    finally:
+        run.epilog = original
+
+
+def test_an_example_that_does_not_point_at_the_rules_is_a_finding() -> None:
+    original = run.epilog
+    run.epilog = "molycow book init"
+    try:
+        messages = [one.message for one in check_cli.findings()]
+        assert any("point at the rules" in one for one in messages)
+    finally:
+        run.epilog = original
