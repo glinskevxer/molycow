@@ -150,8 +150,6 @@ def test_a_failed_test_says_so_in_the_trail(book: Book) -> None:
 
 
 def test_a_held_batch_is_recorded_as_held(book: Book) -> None:
-    from decimal import Decimal
-
     from tests.support import a_batch
 
     from molycow.model.purity import Strip, System
@@ -166,7 +164,6 @@ def test_a_held_batch_is_recorded_as_held(book: Book) -> None:
         "K. Ruzicka",
     )
     assert AuditRepository(book).for_subject(batch_id)[-1].action == "held"
-    assert Decimal(1) > 0
 
 
 def test_a_refused_step_leaves_nothing_in_the_trail(book: Book) -> None:

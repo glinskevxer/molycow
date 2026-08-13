@@ -131,13 +131,11 @@ def test_a_loaded_van_leaves_and_comes_back(book: Book) -> None:
 
 def test_nothing_is_loaded_after_the_van_has_gone(book: Book) -> None:
     box_id = a_box(book)
-    second = an_order(book, "ORD-250407-12", patient_ref="A-4471903")
     a_route(book)
     service = RouteService(book)
     service.open_run("RT-0001", DAY, "J. Fennimore")
     service.load("RT-0001", DAY, box_id)
     service.depart("RT-0001", DAY, at("2025-04-08 08:40"))
-    assert second.id
     with pytest.raises(RuleError, match="already left"):
         service.load("RT-0001", DAY, box_id)
 

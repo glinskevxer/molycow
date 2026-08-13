@@ -9,7 +9,6 @@ from molycow.errors import RuleError
 from molycow.service.dispense import DispenseService
 from molycow.service.shipping import ShippingService
 from molycow.store import Book
-from molycow.units import Activity
 
 DRAW = at("2025-04-08 07:40")
 PACK = at("2025-04-08 08:20")
@@ -41,13 +40,17 @@ def test_packing_closes_the_box_and_reads_it(book: Book) -> None:
 
 
 def test_the_activity_on_the_box_is_the_activity_at_packing(book: Book) -> None:
+    """Not the sum of the labels, which are calibrated for a later moment."""
+    from molycow.store.doses import DoseRepository
+
     dose_id = a_dose(book)
-    service = ShippingService(book)
-    box = service.pack("CU-0001", [dose_id], PACK, "K. Ruzicka", Decimal("12"), Decimal("0.35"))
-    later = service.pack
-    assert later is not None
-    assert box.activity < Activity.of(30, "mci")
-    assert box.activity > Activity.of(20, "mci")
+    dose = DoseRepository(book).get(dose_id)
+    box = ShippingService(book).pack(
+        "CU-0001", [dose_id], PACK, "K. Ruzicka", Decimal("12"), Decimal("0.35")
+    )
+    assert box.activity == dose.activity_at(PACK)
+    assert box.activity < dose.assayed
+    assert box.activity > dose.at_calibration
 
 
 def test_an_empty_box_is_refused(book: Book) -> None:
