@@ -24,6 +24,8 @@ from molycow.cli.survey import survey
 from molycow.cli.waste import waste
 from molycow.clock import DEFAULT_ZONE
 from molycow.errors import MolycowError
+from molycow.formulary import known as known_kits
+from molycow.nuclides import known as known_nuclides
 from molycow.rules import about, rules, subjects
 from molycow.store.migrations import apply, latest, pending, schema_version
 
@@ -182,6 +184,31 @@ def book_laws(session: Session, subject: str | None) -> None:
     for rule in found:
         click.echo(rule.line())
     click.echo(f"{len(found)} rules, {session.path}")
+
+
+@run.command("about")
+@click.pass_obj
+def about_command(session: Session) -> None:
+    """What this build is, and what the book it was pointed at holds.
+
+    The first thing anybody asks when a command does something surprising is
+    which build and which book, so this answers both in five lines rather than
+    in a support call.
+    """
+    click.echo(f"molycow  {__version__}")
+    click.echo(f"schema   {latest()} expected")
+    click.echo(f"rules    {len(rules())} in {len(subjects())} groups")
+    click.echo(f"nuclides {len(known_nuclides())} handled, {len(known_kits())} kits compounded")
+    click.echo(f"zone     {session.zone_name}")
+    if not session.path.exists():
+        click.echo(f"book     {session.path}, not there yet")
+        return
+    with session.open(migrated=False) as opened:
+        rows = sum(opened.row_count(name) for name in opened.tables())
+        click.echo(
+            f"book     {session.path}, schema {schema_version(opened)}, "
+            f"{len(opened.tables())} tables, {rows} rows"
+        )
 
 
 def main() -> int:

@@ -246,12 +246,17 @@ STEPS: tuple[tuple[str, ...], ...] = (
         "120",
     ),
     ("report", "day", "--on", "2025-04-08"),
+    ("report", "holdings", "--at", "2025-04-08 17:00", "--place"),
+    ("book", "verify"),
+    ("about",),
 )
 
 EXPECTED: tuple[str, ...] = (
     "DS-250408-01",
     "SH-250408-01",
     "hot lab day sheet 2025-04-08",
+    "is sound",
+    "rules",
 )
 
 

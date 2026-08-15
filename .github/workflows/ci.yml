@@ -219,3 +219,7 @@ jobs:
           molycow --book "$book" report licence
           molycow --book "$book" book counts
           molycow --book "$book" book check
+          molycow --book "$book" book laws --about routes
+          molycow --book "$book" report waste --at "2025-04-12 09:00"
+          molycow --book "$book" instrument board --on 2025-04-08
+          molycow --book "$book" about

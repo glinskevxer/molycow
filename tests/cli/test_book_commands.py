@@ -208,3 +208,50 @@ def test_a_group_prints_its_own_commands(runner: CliRunner) -> None:
     assert "compound" in result.output
     assert "strips" in result.output
     assert "recall" in result.output
+
+
+def test_about_says_which_build_it_is(runner: CliRunner, tmp_path: Path) -> None:
+    target = tmp_path / "day.sqlite3"
+    runner.invoke(run, ["--book", str(target), "book", "init"])
+    result = runner.invoke(run, ["--book", str(target), "about"])
+    assert result.exit_code == 0
+    assert __version__ in result.output
+    assert f"schema   {latest()} expected" in result.output
+
+
+def test_about_says_what_the_book_holds(runner: CliRunner, tmp_path: Path) -> None:
+    target = tmp_path / "day.sqlite3"
+    runner.invoke(run, ["--book", str(target), "book", "init"])
+    result = runner.invoke(run, ["--book", str(target), "about"])
+    assert "tables" in result.output
+    assert "rows" in result.output
+    assert str(target) in result.output
+
+
+def test_about_works_before_the_book_exists(runner: CliRunner, tmp_path: Path) -> None:
+    result = runner.invoke(run, ["--book", str(tmp_path / "nothing.sqlite3"), "about"])
+    assert result.exit_code == 0
+    assert "not there yet" in result.output
+
+
+def test_about_counts_the_rules_and_the_tables_it_knows(runner: CliRunner, tmp_path: Path) -> None:
+    from molycow.formulary import known as kits
+    from molycow.nuclides import known as nuclides
+    from molycow.rules import rules
+
+    target = tmp_path / "day.sqlite3"
+    runner.invoke(run, ["--book", str(target), "book", "init"])
+    result = runner.invoke(run, ["--book", str(target), "about"])
+    assert f"rules    {len(rules())}" in result.output
+    assert f"{len(nuclides())} handled" in result.output
+    assert f"{len(kits())} kits" in result.output
+
+
+def test_about_shows_a_book_that_is_behind_the_build(runner: CliRunner, tmp_path: Path) -> None:
+    target = tmp_path / "day.sqlite3"
+    runner.invoke(run, ["--book", str(target), "book", "init"])
+    with Book.open(target) as opened:
+        opened.execute("PRAGMA user_version = 4")
+    result = runner.invoke(run, ["--book", str(target), "about"])
+    assert result.exit_code == 0
+    assert "schema 4," in result.output

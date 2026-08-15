@@ -66,3 +66,17 @@ def test_a_broken_step_fails_the_run() -> None:
         assert smoke.main(["--quiet"]) == 1
     finally:
         smoke.STEPS = original
+
+
+def test_the_run_ends_by_saying_which_build_it_was() -> None:
+    assert ("about",) in smoke.STEPS
+    assert ("book", "verify") in smoke.STEPS
+    assert "is sound" in smoke.EXPECTED
+
+
+def test_the_walk_in_ci_runs_the_reports_as_well() -> None:
+    from molycow.tools.walk import repo_root
+
+    workflow = (repo_root() / ".github" / "workflows" / "ci.yml").read_text()
+    for line in ("report waste", "instrument board", "book laws", "about"):
+        assert line in workflow
