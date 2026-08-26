@@ -27,7 +27,7 @@ run mypy "$python" -m mypy
 echo "checks"
 for check in check_docstrings check_layers check_wiring check_tests check_cli \
              check_sql check_indexes check_migrations check_naming check_errors \
-             check_design check_rules check_readme release_check; do
+             check_design check_rules check_package check_readme release_check; do
   run "$check" "$python" -m "molycow.tools.$check"
 done
 run schema_dump "$python" -m molycow.tools.schema_dump --check

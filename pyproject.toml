@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "molycow"
-version = "0.1.0"
+version = "0.2.0"
 description = "Nuclear pharmacy hot lab: generator elutions, kit compounding, unit dose dispensing and release"
 requires-python = ">=3.12"
 dependencies = ["click==8.1.8"]
@@ -23,6 +23,9 @@ molycow = "molycow.cli.main:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/molycow"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "docs", "README.md", "CHANGELOG.md", "constraints.txt", "check.sh"]
 
 [tool.ruff]
 line-length = 100
